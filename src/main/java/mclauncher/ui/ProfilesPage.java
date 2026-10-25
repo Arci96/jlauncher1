@@ -1,15 +1,21 @@
 package mclauncher.ui;
 
+import mclauncher.Downloads;
 import mclauncher.GameRunner;
 import mclauncher.Instance;
+import mclauncher.MrPack;
+import mclauncher.ProfileTools;
 import mclauncher.Store;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.atomic.AtomicReference;
 
 /** "Spielen": Liste aller Profile. */
 public class ProfilesPage extends Page {
@@ -19,7 +25,10 @@ public class ProfilesPage extends Page {
         super(win);
         Widgets.GlowButton add = new Widgets.GlowButton("+  Neues Profil", Widgets.Style.PRIMARY);
         add.addActionListener(e -> win.newProfile());
-        add(header("Profile", "Jedes Profil hat eigene Welten, Mods und Einstellungen", add), BorderLayout.NORTH);
+        Widgets.GlowButton importBtn = new Widgets.GlowButton("Modpack importieren", Widgets.Style.DARK);
+        importBtn.setToolTipText("Modrinth-Modpack (.mrpack) als neues Profil installieren");
+        importBtn.addActionListener(e -> importPack());
+        add(header("Profile", "Jedes Profil hat eigene Welten, Mods und Einstellungen", importBtn, add), BorderLayout.NORTH);
         add(Widgets.scroll(list), BorderLayout.CENTER);
         rebuild();
     }
@@ -41,6 +50,50 @@ public class ProfilesPage extends Page {
         }
         list.revalidate();
         list.repaint();
+    }
+
+    private void importPack() {
+        JFileChooser fc = new JFileChooser();
+        fc.setFileFilter(new FileNameExtensionFilter("Modrinth-Modpack (*.mrpack)", "mrpack"));
+        if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
+        java.nio.file.Path file = fc.getSelectedFile().toPath();
+        AtomicReference<Instance> ref = new AtomicReference<>();
+        Downloads.start("Modpack importieren: " + file.getFileName(),
+                p -> ref.set(MrPack.importPack(file, p, GameRunner::log)),
+                err -> SwingUtilities.invokeLater(() -> {
+                    if (err != null) {
+                        if (!(err instanceof CancellationException)) {
+                            JOptionPane.showMessageDialog(this, err.getMessage(), "Import fehlgeschlagen", JOptionPane.ERROR_MESSAGE);
+                        }
+                        return;
+                    }
+                    Instance i = ref.get();
+                    Store.data.instances.add(i);
+                    Store.save();
+                    AppState.setCurrent(i);
+                    JOptionPane.showMessageDialog(this, "Das Modpack \"" + i.name + "\" wurde als neues Profil angelegt.\n"
+                            + "Beim ersten Start wird noch der Mod-Loader installiert.");
+                }));
+    }
+
+    private void duplicate(Instance inst) {
+        if (GameRunner.state() != GameRunner.State.IDLE && GameRunner.running() == inst) {
+            JOptionPane.showMessageDialog(this, "Beende Minecraft zuerst, bevor du dieses Profil kopierst.");
+            return;
+        }
+        AtomicReference<Instance> ref = new AtomicReference<>();
+        Downloads.start("Profil kopieren: " + inst.name, p -> ref.set(ProfileTools.duplicate(inst, p)),
+                err -> SwingUtilities.invokeLater(() -> {
+                    if (err != null) {
+                        if (!(err instanceof CancellationException)) {
+                            JOptionPane.showMessageDialog(this, err.getMessage(), "Kopieren fehlgeschlagen", JOptionPane.ERROR_MESSAGE);
+                        }
+                        return;
+                    }
+                    Store.data.instances.add(ref.get());
+                    Store.save();
+                    AppState.setCurrent(ref.get());
+                }));
     }
 
     private JComponent card(Instance inst, boolean selected) {
@@ -74,6 +127,7 @@ public class ProfilesPage extends Page {
 
         Widgets.GlowButton play = new Widgets.GlowButton("Spielen", Widgets.Style.PRIMARY);
         Widgets.GlowButton edit = new Widgets.GlowButton("Bearbeiten", Widgets.Style.DARK);
+        Widgets.GlowButton copy = new Widgets.GlowButton("Kopieren", Widgets.Style.DARK);
         Widgets.GlowButton folder = new Widgets.GlowButton("Ordner", Widgets.Style.DARK);
         Widgets.GlowButton del = new Widgets.GlowButton("\u2715", Widgets.Style.DARK);
         play.addActionListener(e -> {
@@ -87,12 +141,15 @@ public class ProfilesPage extends Page {
         });
         edit.addActionListener(e -> win.editProfile(inst));
         folder.addActionListener(e -> Widgets.openFolder(this, inst.dir()));
+        copy.setToolTipText("Profil samt Welten und Mods kopieren, z. B. zum Testen neuer Mods");
+        copy.addActionListener(e -> duplicate(inst));
         del.setToolTipText("Profil löschen");
         del.addActionListener(e -> win.deleteProfile(inst));
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         btns.setOpaque(false);
         btns.add(play);
         btns.add(edit);
+        btns.add(copy);
         btns.add(folder);
         btns.add(del);
         JPanel east = new JPanel(new GridBagLayout());

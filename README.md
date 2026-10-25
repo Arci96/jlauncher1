@@ -11,12 +11,37 @@ Ein Minecraft-Launcher in Java (Swing + FlatLaf, dunkles Design mit grünen Akze
 | **Versionen** | Alle Minecraft-Versionen: herunterladen oder als neues Profil anlegen |
 | **Mods / Ressourcenpakete / Shader** | Installierte Dateien (ein/aus, entfernen) und Modrinth-Suche mit Ein-Klick-Installation |
 | **Server** | Server speichern, Spielerzahl und Ping sehen, direkt beitreten |
+| **Welten** | Welten des Profils sichern (ZIP), wiederherstellen, löschen; Backups liegen außerhalb des Profilordners |
 | **Screenshots** | Vorschaubilder des aktuellen Profils |
 | **Einstellungen** | Standard-RAM, Java, Konto, Datenordner, Minimieren beim Start |
 | **Downloads** | Fortschritt, Geschwindigkeit, Status, Abbrechen |
 | **Konsole** | Spielausgabe und Fehlermeldungen |
 
 Mod-Loader: Fabric, Quilt, Forge, NeoForge. Konten: Offline und Microsoft.
+
+## Mods, Modpacks, Kopieren
+
+- **Mod-Updates:** Auf der Mods-Seite sucht "Mod-Updates suchen" bei Modrinth neuere Versionen (Abgleich über SHA-1) und installiert sie nach Rückfrage.
+- **Modpacks:** Auf der Seite "Spielen" importiert "Modpack importieren" eine `.mrpack`-Datei als neues Profil (Mods werden geladen, Overrides entpackt, nur erlaubte Download-Quellen).
+- **Profil kopieren:** "Kopieren" dupliziert ein Profil samt Welten und Mods, z. B. zum Testen neuer Mods.
+- **CurseForge:** Neben Modrinth kann auch CurseForge durchsucht werden. Dafür unter *Einstellungen → CurseForge* einen kostenlosen API-Schlüssel von https://console.curseforge.com eintragen.
+  Mods, deren Autor Downloads durch andere Programme nicht erlaubt, lädt der Launcher nicht; stattdessen gibt es den Link zum manuellen Download.
+
+## FPS-Limit
+
+Unter **Einstellungen** (Standard für neue Profile und für das aktuelle Profil) oder im Profil-Dialog.
+Der Launcher schreibt `maxFps` vor dem Start in die `options.txt` des Profils.
+`0` = nichts ändern, `260` = unbegrenzt. Mit eingeschaltetem VSync begrenzt zusätzlich die Bildwiederholrate des Monitors.
+
+## Stabilität
+
+- Downloads werden bei Netzwerkfehlern bis zu dreimal wiederholt und per Prüfsumme kontrolliert
+- Beschädigte Versionsdateien werden automatisch neu geladen
+- Die Konfiguration wird atomar gespeichert; eine defekte Datei wird als `launcher.json.defekt` gesichert
+- RAM-Maximum wird auf den vorhandenen Arbeitsspeicher begrenzt; Prüfung auf freien Speicherplatz und vorhandene Java-Datei
+- Nur ein Launcher-Fenster gleichzeitig (Sperrdatei)
+- Unerwartete Fehler landen in `launcher-crash.log`; bei einem Minecraft-Absturz gibt es einen Hinweis mit Weg zur Konsole und zu den Crash-Reports
+- Im Profil-Dialog gibt es einen Knopf "Empfohlen" für bewährte JVM-Argumente (G1GC)
 
 ## Bauen und starten
 
@@ -52,6 +77,8 @@ Ohne sie kann der letzte Login-Schritt scheitern. Der Offline-Modus funktioniert
   FlatLaf in ein Bild gerendert; das echte Aussehen kann leicht abweichen.
 - Das Titelbild ist selbst gezeichnet (kein Minecraft-Artwork/-Logo, das gehört Mojang).
 - Java wird nur gesucht, nicht heruntergeladen.
+- Mod-Updates gibt es nur für Mods von Modrinth (nicht für CurseForge). Modpacks werden nur im Modrinth-Format (.mrpack) importiert, nicht von CurseForge.
+- Mod-Updates, Modpack-Import und CurseForge sind ungetestet gegen die echten Server.
 - Download-Anzeige: Fortschritt nach Dateianzahl, MB und MB/s sind Näherungswerte. Pause gibt es nicht, nur Abbrechen.
 - Server-Ping nutzt keine SRV-Einträge (nur Adresse:Port, Standard 25565).
 - NeoForge für 1.20.1 fehlt (altes Versionsschema).

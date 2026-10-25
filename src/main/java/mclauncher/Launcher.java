@@ -18,11 +18,11 @@ public final class Launcher {
     public static Process start(Instance inst, Auth.Account acc, String server, Progress p, Consumer<String> log) throws IOException {
         Path gameDir = inst.dir();
         Files.createDirectories(gameDir);
+        checkDiskSpace(gameDir);
 
         // 1. Vanilla
         p.update("Minecraft " + inst.mcVersion + " wird geprüft …", -1);
-        Versions.installVanillaJson(inst.mcVersion);
-        JsonObject vanilla = Versions.loadMerged(inst.mcVersion);
+        JsonObject vanilla = loadVanillaOrRepair(inst.mcVersion);
         int javaMajor = vanilla.has("javaVersion") ? vanilla.getAsJsonObject("javaVersion").get("majorVersion").getAsInt() : 8;
         String java = resolveJava(inst, javaMajor);
         log.accept("Java: " + java);
@@ -31,7 +31,7 @@ public final class Launcher {
         // 2. Loader
         String versionId = inst.mcVersion;
         if (inst.type() != Loaders.Type.VANILLA) {
-            if (inst.versionId == null || !Files.exists(Versions.versionJson(inst.versionId))) {
+            if (!versionUsable(inst.versionId)) {
                 inst.versionId = Loaders.install(inst, java, p, log);
                 Store.save();
             }
@@ -43,6 +43,26 @@ public final class Launcher {
         p.update("Starte Minecraft …", -1);
         JsonObject meta = Versions.loadMerged(versionId);
         Path natives = Versions.prepareNatives(meta, versionId);
+
+        // FPS-Limit in options.txt setzen (260 = unbegrenzt)
+        if (inst.fpsLimit > 0) {
+            int fps = Math.min(260, Math.max(10, inst.fpsLimit));
+            try {
+                OptionsFile.set(gameDir, "maxFps", String.valueOf(fps));
+                log.accept("FPS-Limit: " + (fps >= 260 ? "unbegrenzt" : fps));
+            } catch (IOException e) {
+                log.accept("Hinweis: FPS-Limit konnte nicht gesetzt werden: " + e.getMessage());
+            }
+        }
+
+        // RAM auf den vorhandenen Arbeitsspeicher begrenzen, damit die JVM nicht beim Start abbricht
+        int totalMb = Util.totalMemoryMb();
+        int maxMb = inst.ramMax;
+        if (maxMb > totalMb - 512) {
+            maxMb = Math.max(1024, totalMb - 512);
+            log.accept("Hinweis: RAM-Maximum (" + inst.ramMax + " MB) übersteigt den verfügbaren Speicher, verwende " + maxMb + " MB.");
+        }
+        int minMb = Math.min(inst.ramMin, maxMb);
 
         StringJoiner cp = new StringJoiner(Util.cpSeparator());
         for (JsonObject l : Versions.libraries(meta)) {
@@ -79,8 +99,8 @@ public final class Launcher {
 
         List<String> cmd = new ArrayList<>();
         cmd.add(java);
-        cmd.add("-Xms" + inst.ramMin + "M");
-        cmd.add("-Xmx" + inst.ramMax + "M");
+        cmd.add("-Xms" + minMb + "M");
+        cmd.add("-Xmx" + maxMb + "M");
         cmd.addAll(Util.splitArgs(inst.jvmArgs));
 
         if (meta.has("arguments") && meta.getAsJsonObject("arguments").has("jvm")) {
@@ -136,10 +156,49 @@ public final class Launcher {
         return proc;
     }
 
+    private static void checkDiskSpace(Path dir) throws IOException {
+        long free;
+        try {
+            free = Files.getFileStore(dir).getUsableSpace();
+        } catch (IOException e) {
+            return;   // nicht prüfbar - nicht blockieren
+        }
+        if (free < 300L * 1024 * 1024) {
+            throw new IOException("Zu wenig freier Speicherplatz (" + free / (1024 * 1024) + " MB frei, mindestens 300 MB nötig).");
+        }
+    }
+
+    /** Lädt das Vanilla-JSON; ist die Datei beschädigt, wird sie neu heruntergeladen. */
+    private static JsonObject loadVanillaOrRepair(String id) throws IOException {
+        Versions.installVanillaJson(id);
+        try {
+            return Versions.loadMerged(id);
+        } catch (RuntimeException | IOException e) {
+            Files.deleteIfExists(Versions.versionJson(id));
+            Versions.installVanillaJson(id);
+            return Versions.loadMerged(id);
+        }
+    }
+
+    private static boolean versionUsable(String id) {
+        if (id == null || !Files.exists(Versions.versionJson(id))) return false;
+        try {
+            Versions.loadMerged(id);
+            return true;
+        } catch (RuntimeException | IOException e) {
+            return false;
+        }
+    }
+
+    private static String checkedJava(String path) throws IOException {
+        if (!Files.exists(Path.of(path))) throw new IOException("Java-Datei nicht gefunden: " + path);
+        return path;
+    }
+
     private static String resolveJava(Instance inst, int major) throws IOException {
-        if (inst.javaPath != null && !inst.javaPath.isBlank()) return inst.javaPath;
+        if (inst.javaPath != null && !inst.javaPath.isBlank()) return checkedJava(inst.javaPath);
         String def = Store.data.config.defaultJavaPath;
-        if (def != null && !def.isBlank()) return def;
+        if (def != null && !def.isBlank()) return checkedJava(def);
         String found = JavaFinder.find(major);
         if (found == null) {
             throw new IOException("Java " + major + " wurde nicht gefunden. Bitte installiere es (z. B. Eclipse Temurin "

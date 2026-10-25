@@ -1,13 +1,17 @@
 package mclauncher.ui;
 
 import mclauncher.ContentType;
+import mclauncher.Downloads;
 import mclauncher.Instance;
+import mclauncher.ModUpdates;
 import mclauncher.Modrinth;
+import mclauncher.Util;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 
 /** Mods, Ressourcenpakete oder Shader des aktuellen Profils: installierte Dateien + Modrinth-Suche. */
 public class ContentPage extends Page {
@@ -89,6 +93,8 @@ public class ContentPage extends Page {
         Widgets.GlowButton toggle = new Widgets.GlowButton("Ein / Aus", Widgets.Style.DARK);
         Widgets.GlowButton del = new Widgets.GlowButton("Entfernen", Widgets.Style.DANGER);
         Widgets.GlowButton reload = new Widgets.GlowButton("Aktualisieren", Widgets.Style.DARK);
+        Widgets.GlowButton updates = new Widgets.GlowButton("Mod-Updates suchen", Widgets.Style.DARK);
+        updates.addActionListener(e -> checkUpdates(cur));
         toggle.addActionListener(e -> {
             Path p = list.getSelectedValue();
             if (p == null) return;
@@ -109,6 +115,7 @@ public class ContentPage extends Page {
         btns.add(toggle);
         btns.add(del);
         btns.add(reload);
+        if (type == ContentType.MOD) btns.add(updates);
         card.add(btns, BorderLayout.SOUTH);
         return card;
     }
@@ -118,19 +125,19 @@ public class ContentPage extends Page {
         JPanel head = new JPanel();
         head.setOpaque(false);
         head.setLayout(new BoxLayout(head, BoxLayout.Y_AXIS));
-        JLabel t = Widgets.title("Auf Modrinth suchen", 18f);
+        JLabel t = Widgets.title("Suchen und installieren", 18f);
         t.setAlignmentX(LEFT_ALIGNMENT);
         head.add(t);
         String note = switch (type) {
             case SHADER -> "Shader brauchen Iris (Fabric/Quilt) oder OptiFine. Aktivierung im Spiel unter Videoeinstellungen.";
             case RESOURCEPACK -> "Aktiviere Ressourcenpakete im Spiel unter Optionen \u2192 Ressourcenpakete.";
-            default -> "Pflicht-Abhängigkeiten (z. B. Fabric API) werden automatisch mitinstalliert.";
+            default -> "Quelle: Modrinth oder CurseForge. Pflicht-Abhängigkeiten (z. B. Fabric API) werden automatisch mitinstalliert.";
         };
         JLabel n = Widgets.muted("<html>" + note + "</html>");
         n.setAlignmentX(LEFT_ALIGNMENT);
         head.add(n);
         card.add(head, BorderLayout.NORTH);
-        card.add(new ModrinthPanel(cur, type, () -> SwingUtilities.invokeLater(this::refreshInstalled)), BorderLayout.CENTER);
+        card.add(new ContentBrowser(cur, type, () -> SwingUtilities.invokeLater(this::refreshInstalled)), BorderLayout.CENTER);
         return card;
     }
 
@@ -143,6 +150,44 @@ public class ContentPage extends Page {
             error(ex);
         }
         countLabel.setText(model.size() + " Einträge");
+    }
+
+    /** Prüft bei Modrinth auf neuere Versionen der installierten Mods und aktualisiert sie nach Rückfrage. */
+    private void checkUpdates(Instance cur) {
+        if (cur == null) return;
+        countLabel.setText("Suche Updates …");
+        Util.async(() -> {
+            try {
+                List<ModUpdates.Update> ups = ModUpdates.check(cur);
+                SwingUtilities.invokeLater(() -> {
+                    refreshInstalled();
+                    if (ups.isEmpty()) {
+                        JOptionPane.showMessageDialog(this, "Keine Updates gefunden.\n(Geprüft werden nur Mods, die auf Modrinth gefunden werden.)");
+                        return;
+                    }
+                    StringBuilder sb = new StringBuilder();
+                    for (ModUpdates.Update u : ups) {
+                        sb.append(u.oldName()).append("\n    \u2192 ").append(u.newFileName()).append("\n");
+                    }
+                    JTextArea area = new JTextArea(sb.toString(), 12, 48);
+                    area.setEditable(false);
+                    int r = JOptionPane.showConfirmDialog(this, new JScrollPane(area),
+                            ups.size() + " Update(s) verfügbar – jetzt installieren?", JOptionPane.YES_NO_OPTION);
+                    if (r != JOptionPane.YES_OPTION) return;
+                    Downloads.start(ups.size() + " Mods aktualisieren (" + cur.name + ")",
+                            p -> ModUpdates.apply(cur, ups, msg -> p.update(msg, -1)),
+                            err -> SwingUtilities.invokeLater(() -> {
+                                refreshInstalled();
+                                if (err != null) error(new Exception(err.getMessage()));
+                            }));
+                });
+            } catch (Exception ex) {
+                SwingUtilities.invokeLater(() -> {
+                    refreshInstalled();
+                    error(ex);
+                });
+            }
+        });
     }
 
     private void error(Exception ex) {

@@ -132,6 +132,7 @@ public class VersionsPage extends Page {
         i.mcVersion = e.id();
         i.ramMin = Store.data.config.defaultRamMin;
         i.ramMax = Store.data.config.defaultRamMax;
+        i.fpsLimit = Store.data.config.defaultFpsLimit;
         Store.data.instances.add(i);
         Store.save();
         AppState.setCurrent(i);

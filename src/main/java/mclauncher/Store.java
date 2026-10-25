@@ -4,7 +4,10 @@ import com.google.gson.JsonSyntaxException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,6 +27,8 @@ public final class Store {
         public int defaultRamMax = 4096;
         public String defaultJavaPath = "";
         public boolean minimizeOnLaunch = true;
+        public int defaultFpsLimit = 0;
+        public String curseForgeKey = "";
     }
 
     public static class ServerEntry {
@@ -58,13 +63,24 @@ public final class Store {
             }
         } catch (IOException | JsonSyntaxException e) {
             System.err.println("Konfiguration konnte nicht geladen werden: " + e);
+            // Defekte Datei sichern, statt sie beim nächsten Speichern stillschweigend zu überschreiben
+            try {
+                Files.copy(AppPaths.CONFIG, AppPaths.CONFIG.resolveSibling("launcher.json.defekt"), StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException ignored) { }
         }
     }
 
     public static synchronized void save() {
         try {
             Files.createDirectories(AppPaths.ROOT);
-            Files.writeString(AppPaths.CONFIG, Util.GSON.toJson(data), StandardCharsets.UTF_8);
+            // Erst in eine Hilfsdatei schreiben, dann austauschen: so bleibt die Konfiguration auch bei einem Absturz heil.
+            Path tmp = AppPaths.CONFIG.resolveSibling("launcher.json.tmp");
+            Files.writeString(tmp, Util.GSON.toJson(data), StandardCharsets.UTF_8);
+            try {
+                Files.move(tmp, AppPaths.CONFIG, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(tmp, AppPaths.CONFIG, StandardCopyOption.REPLACE_EXISTING);
+            }
         } catch (IOException e) {
             System.err.println("Konfiguration konnte nicht gespeichert werden: " + e);
         }

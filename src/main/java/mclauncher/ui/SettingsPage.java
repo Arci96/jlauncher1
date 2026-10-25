@@ -14,6 +14,8 @@ import java.util.List;
 public class SettingsPage extends Page {
     private final JLabel javaList = new JLabel("Suche …");
     private final JLabel currentProfile = new JLabel();
+    private final JSpinner profFps = new JSpinner(new SpinnerNumberModel(0, 0, 260, 5));
+    private boolean syncing;
     private final Timer saveTimer = new Timer(400, e -> Store.save());
 
     public SettingsPage(MainWindow win) {
@@ -76,9 +78,20 @@ public class SettingsPage extends Page {
         row(defaults, c, 0, "RAM minimal", ramMin);
         row(defaults, c, 1, "RAM maximal", ramMax);
         row(defaults, c, 2, "Java-Pfad", javaRow);
-        c.gridx = 1; c.gridy = 3; c.weightx = 1;
+        JSpinner defFps = new JSpinner(new SpinnerNumberModel(Math.max(0, Math.min(260, cfg.defaultFpsLimit)), 0, 260, 5));
+        defFps.addChangeListener(e -> {
+            int v = (Integer) defFps.getValue();
+            cfg.defaultFpsLimit = v > 0 && v < 10 ? 10 : v;
+            saveTimer.restart();
+        });
+        JPanel fpsRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        fpsRow.setOpaque(false);
+        fpsRow.add(defFps);
+        fpsRow.add(Widgets.muted("0 = nicht ändern, 260 = unbegrenzt"));
+        row(defaults, c, 3, "FPS-Limit", fpsRow);
+        c.gridx = 1; c.gridy = 4; c.weightx = 1;
         defaults.add(javaList, c);
-        c.gridy = 4; c.fill = GridBagConstraints.NONE; c.anchor = GridBagConstraints.WEST;
+        c.gridy = 5; c.fill = GridBagConstraints.NONE; c.anchor = GridBagConstraints.WEST;
         defaults.add(rescan, c);
         col.add(Box.createVerticalStrut(12));
         col.add(card("Standard für neue Profile", defaults));
@@ -93,8 +106,51 @@ public class SettingsPage extends Page {
         prof.setOpaque(false);
         prof.add(currentProfile, BorderLayout.CENTER);
         prof.add(editProfile, BorderLayout.EAST);
+        JPanel fpsLine = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        fpsLine.setOpaque(false);
+        fpsLine.add(new JLabel("FPS-Limit"));
+        fpsLine.add(profFps);
+        fpsLine.add(Widgets.muted("0 = nicht ändern, 260 = unbegrenzt (gilt beim nächsten Start)"));
+        prof.add(fpsLine, BorderLayout.SOUTH);
+        profFps.addChangeListener(e -> {
+            Instance cur = AppState.current();
+            if (syncing || cur == null) return;
+            int v = (Integer) profFps.getValue();
+            cur.fpsLimit = v > 0 && v < 10 ? 10 : v;
+            saveTimer.restart();
+        });
         col.add(Box.createVerticalStrut(12));
         col.add(card("Aktuelles Profil (Spielverzeichnis, RAM, Java, Version)", prof));
+
+        // ---- CurseForge
+        JTextField cfKey = new JTextField(cfg.curseForgeKey);
+        cfKey.putClientProperty("JTextField.placeholderText", "CurseForge-API-Schlüssel einfügen");
+        cfKey.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            void upd() { cfg.curseForgeKey = cfKey.getText().trim(); saveTimer.restart(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { upd(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { upd(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { upd(); }
+        });
+        Widgets.GlowButton cfLink = new Widgets.GlowButton("Schlüssel beantragen (kostenlos)", Widgets.Style.DARK);
+        cfLink.addActionListener(e -> {
+            try {
+                Desktop.getDesktop().browse(java.net.URI.create("https://console.curseforge.com/"));
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Öffne https://console.curseforge.com/ im Browser.");
+            }
+        });
+        JPanel cf = new JPanel(new BorderLayout(0, 8));
+        cf.setOpaque(false);
+        cf.add(Widgets.muted("<html>Damit kannst du Mods auch von CurseForge installieren. Melde dich auf der Seite an und erstelle unter "
+                + "\"API keys\" einen Schlüssel. Mods, deren Autor Downloads durch andere Programme nicht erlaubt, musst du manuell laden.</html>"),
+                BorderLayout.NORTH);
+        cf.add(cfKey, BorderLayout.CENTER);
+        JPanel cfBtn = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        cfBtn.setOpaque(false);
+        cfBtn.add(cfLink);
+        cf.add(cfBtn, BorderLayout.SOUTH);
+        col.add(Box.createVerticalStrut(12));
+        col.add(card("CurseForge", cf));
 
         // ---- Konto
         Widgets.GlowButton account = new Widgets.GlowButton("Konto verwalten …", Widgets.Style.DARK);
@@ -122,6 +178,10 @@ public class SettingsPage extends Page {
 
     private void updateProfileLabel() {
         Instance cur = AppState.current();
+        syncing = true;
+        profFps.setValue(cur == null ? 0 : Math.max(0, Math.min(260, cur.fpsLimit)));
+        profFps.setEnabled(cur != null);
+        syncing = false;
         currentProfile.setText(cur == null ? "Kein Profil" : "<html><b>" + cur.name + "</b>  ·  " + cur.label()
                 + "<br><span style='color:#8B9C91'>" + cur.dir() + "</span></html>");
     }

@@ -18,6 +18,9 @@ public final class GameRunner {
     private static volatile Process process;
     private static volatile Instance running;
     private static volatile Downloads.Task prepTask;
+    private static volatile int lastExit;
+    private static volatile boolean stoppedByUser;
+    private static volatile Instance lastInstance;
 
     private static final List<Runnable> STATE_LISTENERS = new CopyOnWriteArrayList<>();
     private static final List<Consumer<String>> LOG_LISTENERS = new CopyOnWriteArrayList<>();
@@ -25,6 +28,9 @@ public final class GameRunner {
 
     public static State state() { return state; }
     public static Instance running() { return running; }
+    public static int lastExitCode() { return lastExit; }
+    public static boolean stoppedByUser() { return stoppedByUser; }
+    public static Instance lastInstance() { return lastInstance; }
 
     public static void addStateListener(Runnable r) { STATE_LISTENERS.add(r); }
     public static void addLogListener(Consumer<String> c) { LOG_LISTENERS.add(c); }
@@ -58,6 +64,9 @@ public final class GameRunner {
     public static synchronized void play(Instance inst, String server, Consumer<Throwable> onError) {
         if (state != State.IDLE) return;
         running = inst;
+        lastInstance = inst;
+        stoppedByUser = false;
+        lastExit = 0;
         setState(State.PREPARING);
         log("──── Start: " + inst.name + " (" + inst.label() + ") ────");
 
@@ -76,6 +85,7 @@ public final class GameRunner {
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
+                lastExit = code;
                 log("Minecraft beendet (Exit-Code " + code + ")");
                 process = null;
                 running = null;
@@ -95,6 +105,7 @@ public final class GameRunner {
     public static void stop() {
         Process p = process;
         if (p != null) {
+            stoppedByUser = true;
             p.destroy();
             return;
         }

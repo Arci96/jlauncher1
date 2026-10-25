@@ -33,8 +33,9 @@ public class MainWindow extends JFrame {
     public MainWindow() {
         super("JLauncher");
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        setSize(1280, 820);
-        setMinimumSize(new Dimension(1060, 680));
+        Dimension scr = Toolkit.getDefaultToolkit().getScreenSize();
+        setSize(Math.min(1280, scr.width - 40), Math.min(820, scr.height - 80));
+        setMinimumSize(new Dimension(1000, 600));
         setLocationRelativeTo(null);
 
         JPanel root = new JPanel(new BorderLayout());
@@ -51,6 +52,7 @@ public class MainWindow extends JFrame {
         addPage("resourcepacks", new ContentPage(this, ContentType.RESOURCEPACK));
         addPage("shaders", new ContentPage(this, ContentType.SHADER));
         addPage("servers", new ServersPage(this));
+        addPage("worlds", new WorldsPage(this));
         addPage("screenshots", new ScreenshotsPage(this));
         addPage("settings", new SettingsPage(this));
         addPage("downloads", new DownloadsPage(this));
@@ -81,8 +83,7 @@ public class MainWindow extends JFrame {
     // ------------------------------------------------------------------ Aufbau
 
     private JComponent buildSidebar() {
-        JPanel side = new JPanel();
-        side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS));
+        JPanel side = new JPanel(new BorderLayout());
         side.setBackground(Theme.SIDEBAR);
         side.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 0, 1, Theme.BORDER),
@@ -91,6 +92,7 @@ public class MainWindow extends JFrame {
 
         JPanel logo = new JPanel(new BorderLayout(12, 0));
         logo.setOpaque(false);
+        logo.setBorder(BorderFactory.createEmptyBorder(0, 0, 14, 0));
         logo.add(new Widgets.LogoIcon(), BorderLayout.WEST);
         JPanel t = new JPanel();
         t.setOpaque(false);
@@ -103,29 +105,31 @@ public class MainWindow extends JFrame {
         t.add(tag);
         t.add(Box.createVerticalGlue());
         logo.add(t, BorderLayout.CENTER);
-        logo.setAlignmentX(Component.LEFT_ALIGNMENT);
-        logo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 54));
-        side.add(logo);
-        side.add(Box.createVerticalStrut(18));
+        side.add(logo, BorderLayout.NORTH);
 
-        addNav(side, "home", "\u2302", "Startseite");
-        addNav(side, "profiles", "\u25B6", "Spielen");
-        addNav(side, "versions", "\u25C6", "Versionen");
-        addNav(side, "mods", "\u271A", "Mods");
-        addNav(side, "resourcepacks", "\u270E", "Ressourcenpakete");
-        addNav(side, "shaders", "\u25D0", "Shader");
-        addNav(side, "servers", "\u2630", "Server");
-        addNav(side, "screenshots", "\u25A3", "Screenshots");
-        side.add(Box.createVerticalStrut(10));
+        // Navigation (scrollt, falls das Fenster niedrig ist)
+        Widgets.VPanel navPanel = new Widgets.VPanel();
+        addNav(navPanel, "home", "\u2302", "Startseite");
+        addNav(navPanel, "profiles", "\u25B6", "Spielen");
+        addNav(navPanel, "versions", "\u25C6", "Versionen");
+        addNav(navPanel, "mods", "\u271A", "Mods");
+        addNav(navPanel, "resourcepacks", "\u270E", "Ressourcenpakete");
+        addNav(navPanel, "shaders", "\u25D0", "Shader");
+        addNav(navPanel, "servers", "\u2630", "Server");
+        addNav(navPanel, "worlds", "\u25CE", "Welten");
+        addNav(navPanel, "screenshots", "\u25A3", "Screenshots");
+        navPanel.add(Box.createVerticalStrut(8));
         JSeparator sep = new JSeparator();
         sep.setForeground(Theme.BORDER);
         sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 2));
-        side.add(sep);
-        side.add(Box.createVerticalStrut(10));
-        addNav(side, "settings", "\u2699", "Einstellungen");
-        addNav(side, "downloads", "\u21E9", "Downloads");
-        addNav(side, "console", "\u2328", "Konsole");
-        side.add(Box.createVerticalGlue());
+        navPanel.add(sep);
+        navPanel.add(Box.createVerticalStrut(8));
+        addNav(navPanel, "settings", "\u2699", "Einstellungen");
+        addNav(navPanel, "downloads", "\u21E9", "Downloads");
+        addNav(navPanel, "console", "\u2328", "Konsole");
+        JScrollPane navScroll = Widgets.scroll(navPanel);
+        navScroll.setBorder(null);
+        side.add(navScroll, BorderLayout.CENTER);
 
         Widgets.RoundPanel account = new Widgets.RoundPanel(new BorderLayout(10, 0)).fill(Theme.PANEL).pad(10, 10, 10, 12);
         account.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -141,12 +145,15 @@ public class MainWindow extends JFrame {
         texts.add(Box.createVerticalGlue());
         account.add(texts, BorderLayout.CENTER);
         account.add(new JLabel("\u203A"), BorderLayout.EAST);
-        account.setAlignmentX(Component.LEFT_ALIGNMENT);
-        account.setMaximumSize(new Dimension(Integer.MAX_VALUE, 66));
+        account.setPreferredSize(new Dimension(100, 66));
         account.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) { openAccountDialog(); }
         });
-        side.add(account);
+        JPanel accountWrap = new JPanel(new BorderLayout());
+        accountWrap.setOpaque(false);
+        accountWrap.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        accountWrap.add(account);
+        side.add(accountWrap, BorderLayout.SOUTH);
         return side;
     }
 
@@ -233,6 +240,19 @@ public class MainWindow extends JFrame {
         accountStatus.setForeground(ms ? Theme.ACCENT : Theme.MUTED);
     }
 
+    /** Minecraft wurde nicht normal beendet: Hinweis mit Weg zur Konsole und zu den Crash-Reports. */
+    private void showCrashHint() {
+        Instance inst = GameRunner.lastInstance();
+        String[] options = {"Konsole öffnen", "Crash-Reports-Ordner", "Schließen"};
+        int c = JOptionPane.showOptionDialog(this,
+                "Minecraft wurde unerwartet beendet (Exit-Code " + GameRunner.lastExitCode() + ").\n"
+                        + "Die Ursache steht meist in der Konsole oder in einem Crash-Report.\n"
+                        + "Häufige Gründe: zu wenig RAM, falsche Java-Version, inkompatible Mods.",
+                "Minecraft abgestürzt", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
+        if (c == 0) navigate("console");
+        else if (c == 1 && inst != null) Widgets.openFolder(this, inst.dir().resolve("crash-reports"));
+    }
+
     private void onGameState() {
         GameRunner.State s = GameRunner.state();
         if (s == GameRunner.State.RUNNING && Store.data.config.minimizeOnLaunch) {
@@ -240,6 +260,7 @@ public class MainWindow extends JFrame {
         } else if (s == GameRunner.State.IDLE && lastState == GameRunner.State.RUNNING) {
             setState(Frame.NORMAL);
             toFront();
+            if (GameRunner.lastExitCode() != 0 && !GameRunner.stoppedByUser()) showCrashHint();
         }
         lastState = s;
     }

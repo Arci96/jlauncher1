@@ -159,10 +159,10 @@ public final class Widgets {
             setBorder(BorderFactory.createEmptyBorder(0, 50, 0, 12));
             setFont(Theme.font(Font.PLAIN, 15f));
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            Dimension d = new Dimension(224, 46);
+            Dimension d = new Dimension(224, 42);
             setPreferredSize(d);
             setMinimumSize(d);
-            setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
             setAlignmentX(Component.LEFT_ALIGNMENT);
         }
 

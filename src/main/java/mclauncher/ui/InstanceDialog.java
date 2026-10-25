@@ -27,6 +27,7 @@ public class InstanceDialog extends JDialog {
     private final JTextField javaField = new JTextField(24);
     private final JTextField jvmField = new JTextField(24);
     private final JTextField dirField = new JTextField(24);
+    private final JSpinner fpsSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 260, 5));
     private final JLabel hint = new JLabel(" ");
 
     private volatile int loadToken;
@@ -40,6 +41,7 @@ public class InstanceDialog extends JDialog {
             Store.Config cfg = Store.data.config;
             inst.ramMin = cfg.defaultRamMin;
             inst.ramMax = cfg.defaultRamMax;
+            inst.fpsLimit = cfg.defaultFpsLimit;
         }
 
         int total = Widgets.totalMemoryMb();
@@ -64,13 +66,25 @@ public class InstanceDialog extends JDialog {
         row = addRow(form, c, row, "RAM minimal", ramMin);
         row = addRow(form, c, row, "RAM maximal", ramMax);
 
+        fpsSpinner.setValue(Math.max(0, Math.min(260, inst.fpsLimit)));
+        JPanel fpsRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        fpsRow.add(fpsSpinner);
+        fpsRow.add(new JLabel("0 = Spiel-Einstellung behalten, 260 = unbegrenzt"));
+        row = addRow(form, c, row, "FPS-Limit", fpsRow);
+
         javaField.setText(inst.javaPath);
         javaField.putClientProperty("JTextField.placeholderText", "automatisch");
         row = addRow(form, c, row, "Java-Pfad", withBrowse(javaField, false));
 
         jvmField.setText(inst.jvmArgs);
         jvmField.putClientProperty("JTextField.placeholderText", "z. B. -XX:+UseG1GC");
-        row = addRow(form, c, row, "JVM-Argumente", jvmField);
+        JButton recommended = new JButton("Empfohlen");
+        recommended.setToolTipText("Setzt bewährte Speicherverwaltungs-Argumente (G1GC)");
+        recommended.addActionListener(e -> jvmField.setText("-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+DisableExplicitGC"));
+        JPanel jvmRow = new JPanel(new BorderLayout(6, 0));
+        jvmRow.add(jvmField, BorderLayout.CENTER);
+        jvmRow.add(recommended, BorderLayout.EAST);
+        row = addRow(form, c, row, "JVM-Argumente", jvmRow);
 
         dirField.setText(inst.gameDirOverride);
         dirField.putClientProperty("JTextField.placeholderText", "Standardordner des Launchers");
@@ -223,6 +237,8 @@ public class InstanceDialog extends JDialog {
         inst.javaPath = javaField.getText().trim();
         inst.jvmArgs = jvmField.getText().trim();
         inst.gameDirOverride = dirField.getText().trim();
+        int fps = (Integer) fpsSpinner.getValue();
+        inst.fpsLimit = fps > 0 && fps < 10 ? 10 : fps;
         result = inst;
         dispose();
     }

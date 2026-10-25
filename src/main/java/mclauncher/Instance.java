@@ -16,6 +16,7 @@ public class Instance {
     public String javaPath = "";           // leer = automatisch
     public String jvmArgs = "";
     public String gameDirOverride = "";    // leer = Standardordner
+    public int fpsLimit = 0;               // 0 = Spiel-Einstellung nicht ändern, 260 = unbegrenzt
     public long lastPlayed;
 
     public boolean hasCustomDir() { return gameDirOverride != null && !gameDirOverride.isBlank(); }

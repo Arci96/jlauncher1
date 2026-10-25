@@ -149,7 +149,41 @@ public final class Util {
 
     public record Dl(String url, Path dest, String sha1, boolean verifyExisting) {}
 
+    /** Lädt eine Datei herunter und versucht es bei Netzwerkfehlern bis zu dreimal. */
     public static void download(String url, Path dest, String sha1, boolean verifyExisting) throws IOException {
+        IOException last = null;
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                downloadOnce(url, dest, sha1, verifyExisting);
+                return;
+            } catch (IOException e) {
+                last = e;
+                String m = e.getMessage() == null ? "" : e.getMessage();
+                if (Thread.currentThread().isInterrupted() || m.equals("Abgebrochen") || m.contains("HTTP 404")) throw e;
+                if (attempt < 3) {
+                    try {
+                        Thread.sleep(800L * attempt);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new IOException("Abgebrochen", ie);
+                    }
+                }
+            }
+        }
+        throw last;
+    }
+
+    /** Gesamter Arbeitsspeicher des Rechners in MB. */
+    public static int totalMemoryMb() {
+        try {
+            var os = (com.sun.management.OperatingSystemMXBean) java.lang.management.ManagementFactory.getOperatingSystemMXBean();
+            return (int) Math.max(2048, Math.min(os.getTotalMemorySize() / (1024 * 1024), 1_000_000));
+        } catch (Throwable t) {
+            return 8192;
+        }
+    }
+
+    private static void downloadOnce(String url, Path dest, String sha1, boolean verifyExisting) throws IOException {
         if (Files.exists(dest)) {
             if (!verifyExisting || sha1 == null || sha1.equalsIgnoreCase(sha1(dest))) return;
         }
