@@ -1,9 +1,13 @@
 package mclauncher.ui;
 
+import mclauncher.I18n;
 import mclauncher.ContentType;
 import mclauncher.Downloads;
 import mclauncher.GameRunner;
 import mclauncher.Instance;
+import mclauncher.Auth;
+import mclauncher.Skins;
+import mclauncher.Updates;
 import mclauncher.Store;
 import mclauncher.Util;
 
@@ -14,6 +18,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -32,6 +37,7 @@ public class MainWindow extends JFrame {
 
     public MainWindow() {
         super("JLauncher");
+        setIconImages(Widgets.appIcons());
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         Dimension scr = Toolkit.getDefaultToolkit().getScreenSize();
         setSize(Math.min(1280, scr.width - 40), Math.min(820, scr.height - 80));
@@ -61,6 +67,17 @@ public class MainWindow extends JFrame {
         updateAccount();
         navigate("home");
 
+        // Im Hintergrund: altes Klartext-Token in den Schlüsselbund verschieben und nach Updates suchen
+        Util.async(() -> {
+            try {
+                Thread.sleep(4000);
+            } catch (InterruptedException e) {
+                return;
+            }
+            Auth.migrateLegacyToken();
+            autoUpdateCheck();
+        });
+
         GameRunner.addStateListener(() -> SwingUtilities.invokeLater(this::onGameState));
         Downloads.addListener(() -> SwingUtilities.invokeLater(() ->
                 nav.get("downloads").setBadge(Downloads.active())));
@@ -70,8 +87,8 @@ public class MainWindow extends JFrame {
             public void windowClosing(WindowEvent e) {
                 if (GameRunner.state() != GameRunner.State.IDLE) {
                     int r = JOptionPane.showConfirmDialog(MainWindow.this,
-                            "Minecraft läuft noch oder wird vorbereitet. Launcher trotzdem schließen?\n(Ein laufendes Spiel läuft weiter.)",
-                            "Beenden", JOptionPane.YES_NO_OPTION);
+                            I18n.t("Minecraft läuft noch oder wird vorbereitet. Launcher trotzdem schließen?\n(Ein laufendes Spiel läuft weiter.)"),
+                            I18n.t("Beenden"), JOptionPane.YES_NO_OPTION);
                     if (r != JOptionPane.YES_OPTION) return;
                 }
                 Store.save();
@@ -109,14 +126,14 @@ public class MainWindow extends JFrame {
 
         // Navigation (scrollt, falls das Fenster niedrig ist)
         Widgets.VPanel navPanel = new Widgets.VPanel();
-        addNav(navPanel, "home", "\u2302", "Startseite");
-        addNav(navPanel, "profiles", "\u25B6", "Spielen");
-        addNav(navPanel, "versions", "\u25C6", "Versionen");
+        addNav(navPanel, "home", "\u2302", I18n.t("Startseite"));
+        addNav(navPanel, "profiles", "\u25B6", I18n.t("Spielen"));
+        addNav(navPanel, "versions", "\u25C6", I18n.t("Versionen"));
         addNav(navPanel, "mods", "\u271A", "Mods");
-        addNav(navPanel, "resourcepacks", "\u270E", "Ressourcenpakete");
-        addNav(navPanel, "shaders", "\u25D0", "Shader");
-        addNav(navPanel, "servers", "\u2630", "Server");
-        addNav(navPanel, "worlds", "\u25CE", "Welten");
+        addNav(navPanel, "resourcepacks", "\u270E", I18n.t("Ressourcenpakete"));
+        addNav(navPanel, "shaders", "\u25D0", I18n.t("Shader"));
+        addNav(navPanel, "servers", "\u2630", I18n.t("Server"));
+        addNav(navPanel, "worlds", "\u25CE", I18n.t("Welten"));
         addNav(navPanel, "screenshots", "\u25A3", "Screenshots");
         navPanel.add(Box.createVerticalStrut(8));
         JSeparator sep = new JSeparator();
@@ -124,9 +141,9 @@ public class MainWindow extends JFrame {
         sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 2));
         navPanel.add(sep);
         navPanel.add(Box.createVerticalStrut(8));
-        addNav(navPanel, "settings", "\u2699", "Einstellungen");
+        addNav(navPanel, "settings", "\u2699", I18n.t("Einstellungen"));
         addNav(navPanel, "downloads", "\u21E9", "Downloads");
-        addNav(navPanel, "console", "\u2328", "Konsole");
+        addNav(navPanel, "console", "\u2328", I18n.t("Konsole"));
         JScrollPane navScroll = Widgets.scroll(navPanel);
         navScroll.setBorder(null);
         side.add(navScroll, BorderLayout.CENTER);
@@ -184,7 +201,7 @@ public class MainWindow extends JFrame {
 
     public void play(Instance inst, String server) {
         GameRunner.play(inst, server, err -> SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(this, err.getMessage(), "Start fehlgeschlagen", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, err.getMessage(), I18n.t("Start fehlgeschlagen"), JOptionPane.ERROR_MESSAGE);
             navigate("console");
         }));
     }
@@ -205,10 +222,10 @@ public class MainWindow extends JFrame {
 
     public void deleteProfile(Instance inst) {
         String extra = inst.hasCustomDir()
-                ? "\n\nDer eigene Ordner (" + inst.dir() + ") bleibt unangetastet."
-                : "\n\nWelten und Mods dieses Profils werden unwiderruflich gelöscht.";
-        int r = JOptionPane.showConfirmDialog(this, "Profil \"" + inst.name + "\" löschen?" + extra,
-                "Löschen", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                ? I18n.t("\n\nDer eigene Ordner (") + inst.dir() + I18n.t(") bleibt unangetastet.")
+                : I18n.t("\n\nWelten und Mods dieses Profils werden unwiderruflich gelöscht.");
+        int r = JOptionPane.showConfirmDialog(this, I18n.t("Profil \"") + inst.name + I18n.t("\" löschen?") + extra,
+                I18n.t("Löschen"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (r != JOptionPane.YES_OPTION) return;
         Store.data.instances.remove(inst);
         Store.save();
@@ -218,7 +235,7 @@ public class MainWindow extends JFrame {
                     Util.deleteRecursive(inst.dir());
                 } catch (IOException ex) {
                     SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
-                            "Ordner konnte nicht vollständig gelöscht werden:\n" + ex.getMessage()));
+                            I18n.t("Ordner konnte nicht vollständig gelöscht werden:\n") + ex.getMessage()));
                 }
             });
         }
@@ -233,22 +250,105 @@ public class MainWindow extends JFrame {
     private void updateAccount() {
         Store.Config c = Store.data.config;
         boolean ms = "microsoft".equals(c.accountType);
-        String n = ms ? (c.msName == null || c.msName.isBlank() ? "Nicht angemeldet" : c.msName) : c.offlineName;
+        String n = ms ? (c.msName == null || c.msName.isBlank() ? I18n.t("Nicht angemeldet") : c.msName) : c.offlineName;
         accountName.setText(n);
         avatar.setName(n);
         accountStatus.setText(ms ? "\u25CF Microsoft" : "\u25CF Offline");
         accountStatus.setForeground(ms ? Theme.ACCENT : Theme.MUTED);
+
+        // Skin nur bei Microsoft-Konto (der Offline-Modus hat keinen Skin)
+        String skinUrl = c.msSkinUrl == null ? "" : c.msSkinUrl;
+        if (ms && !skinUrl.isBlank()) {
+            Util.async(() -> {
+                try {
+                    java.awt.image.BufferedImage head = Skins.head(skinUrl);
+                    SwingUtilities.invokeLater(() -> {
+                        if ("microsoft".equals(Store.data.config.accountType) && skinUrl.equals(Store.data.config.msSkinUrl)) {
+                            avatar.setHead(head);
+                        }
+                    });
+                } catch (Exception ignored) { }
+            });
+        } else {
+            avatar.setHead(null);
+        }
+    }
+
+    // ------------------------------------------------------------------ Launcher-Updates
+
+    private void autoUpdateCheck() {
+        Store.Config c = Store.data.config;
+        if (!c.checkUpdates || Updates.isDevBuild()) return;
+        if (System.currentTimeMillis() - c.lastUpdateCheck < 12L * 3600 * 1000) return;   // höchstens zweimal täglich
+        checkForUpdates(false);
+    }
+
+    /** Fragt GitHub nach der neuesten Version. {@code manual}: auch "keine Updates" und Fehler melden. */
+    public void checkForUpdates(boolean manual) {
+        Store.Config c = Store.data.config;
+        String repo = c.updateRepo == null ? "" : c.updateRepo.trim();
+        if (repo.isEmpty()) {
+            if (manual) JOptionPane.showMessageDialog(this,
+                    I18n.t("Trage zuerst in den Einstellungen dein GitHub-Repository ein (Benutzer/Repository)."));
+            return;
+        }
+        Util.async(() -> {
+            try {
+                Updates.Release r = Updates.latest(repo);
+                c.lastUpdateCheck = System.currentTimeMillis();
+                Store.save();
+                boolean newer = Updates.isNewer(r.version(), Updates.currentVersion());
+                SwingUtilities.invokeLater(() -> {
+                    if (newer && (manual || !r.tag().equals(c.skippedVersion))) {
+                        showUpdateDialog(r);
+                    } else if (manual) {
+                        JOptionPane.showMessageDialog(this, I18n.t("Du hast die neueste Version: ") + Updates.currentVersion());
+                    }
+                });
+            } catch (Exception ex) {
+                if (manual) {
+                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
+                            I18n.t("Die Update-Suche ist fehlgeschlagen: ") + ex.getMessage(),
+                            I18n.t("Fehler"), JOptionPane.ERROR_MESSAGE));
+                }
+            }
+        });
+    }
+
+    private void showUpdateDialog(Updates.Release r) {
+        String text = r.notes().length() > 1200 ? r.notes().substring(0, 1200) + " …" : r.notes();
+        JTextArea notes = new JTextArea(text, 10, 46);
+        notes.setEditable(false);
+        notes.setLineWrap(true);
+        notes.setWrapStyleWord(true);
+        JPanel p = new JPanel(new BorderLayout(0, 8));
+        p.add(new JLabel(I18n.t("Eine neue Version von JLauncher ist verfügbar: ") + r.version()
+                + I18n.t(" (installiert: ") + Updates.currentVersion() + ")"), BorderLayout.NORTH);
+        if (!r.notes().isBlank()) p.add(new JScrollPane(notes), BorderLayout.CENTER);
+        String[] options = {I18n.t("Zur Download-Seite"), I18n.t("Später"), I18n.t("Diese Version überspringen")};
+        int c = JOptionPane.showOptionDialog(this, p, I18n.t("Update verfügbar"), JOptionPane.DEFAULT_OPTION,
+                JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+        if (c == 0) {
+            try {
+                Desktop.getDesktop().browse(URI.create(r.url()));
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, r.url());
+            }
+        } else if (c == 2) {
+            Store.data.config.skippedVersion = r.tag();
+            Store.save();
+        }
     }
 
     /** Minecraft wurde nicht normal beendet: Hinweis mit Weg zur Konsole und zu den Crash-Reports. */
     private void showCrashHint() {
         Instance inst = GameRunner.lastInstance();
-        String[] options = {"Konsole öffnen", "Crash-Reports-Ordner", "Schließen"};
+        String[] options = {I18n.t("Konsole öffnen"), I18n.t("Crash-Reports-Ordner"), I18n.t("Schließen")};
         int c = JOptionPane.showOptionDialog(this,
-                "Minecraft wurde unerwartet beendet (Exit-Code " + GameRunner.lastExitCode() + ").\n"
-                        + "Die Ursache steht meist in der Konsole oder in einem Crash-Report.\n"
-                        + "Häufige Gründe: zu wenig RAM, falsche Java-Version, inkompatible Mods.",
-                "Minecraft abgestürzt", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
+                I18n.t("Minecraft wurde unerwartet beendet (Exit-Code ") + GameRunner.lastExitCode() + ").\n"
+                        + I18n.t("Die Ursache steht meist in der Konsole oder in einem Crash-Report.\n")
+                        + I18n.t("Häufige Gründe: zu wenig RAM, falsche Java-Version, inkompatible Mods."),
+                I18n.t("Minecraft abgestürzt"), JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
         if (c == 0) navigate("console");
         else if (c == 1 && inst != null) Widgets.openFolder(this, inst.dir().resolve("crash-reports"));
     }

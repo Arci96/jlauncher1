@@ -70,9 +70,9 @@ public final class GameRunner {
         setState(State.PREPARING);
         log("──── Start: " + inst.name + " (" + inst.label() + ") ────");
 
-        prepTask = Downloads.start("Minecraft " + inst.mcVersion + " starten (" + inst.name + ")", p -> {
+        prepTask = Downloads.start("Minecraft " + inst.mcVersion + I18n.t(" starten (") + inst.name + ")", p -> {
             Auth.Account acc = Auth.current();
-            log("Konto: " + acc.name() + " (" + acc.userType() + ")");
+            log(I18n.t("Konto: ") + acc.name() + " (" + acc.userType() + ")");
             Process pr = Launcher.start(inst, acc, server, p, GameRunner::log);
             process = pr;
             inst.lastPlayed = System.currentTimeMillis();
@@ -86,14 +86,14 @@ public final class GameRunner {
                     Thread.currentThread().interrupt();
                 }
                 lastExit = code;
-                log("Minecraft beendet (Exit-Code " + code + ")");
+                log(I18n.t("Minecraft beendet (Exit-Code ") + code + ")");
                 process = null;
                 running = null;
                 setState(State.IDLE);
             });
         }, err -> {
             if (err == null) return;
-            log(err instanceof CancellationException ? "Start abgebrochen." : "FEHLER: " + err.getMessage());
+            log(err instanceof CancellationException ? I18n.t("Start abgebrochen.") : I18n.t("FEHLER: ") + err.getMessage());
             process = null;
             running = null;
             setState(State.IDLE);

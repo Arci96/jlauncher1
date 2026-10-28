@@ -1,5 +1,6 @@
 package mclauncher.ui;
 
+import mclauncher.I18n;
 import mclauncher.Downloads;
 
 import javax.swing.*;
@@ -77,9 +78,9 @@ public class TaskRow extends Widgets.RoundPanel {
                 double mb = task.bytes() / (1024.0 * 1024.0);
                 info.setText(task.message + "  ·  " + String.format("%.0f MB geladen (%.1f MB/s)", mb, Downloads.speedMbPerSec()));
             }
-            case DONE -> { pct.setText("Fertig"); info.setText(task.message); }
-            case FAILED -> { pct.setText("Fehler"); info.setText(task.message); }
-            default -> { pct.setText("Abgebrochen"); info.setText(task.message); }
+            case DONE -> { pct.setText(I18n.t("Fertig")); info.setText(task.message); }
+            case FAILED -> { pct.setText(I18n.t("Fehler")); info.setText(task.message); }
+            default -> { pct.setText(I18n.t("Abgebrochen")); info.setText(task.message); }
         }
         cancel.setVisible(st == Downloads.State.RUNNING);
     }

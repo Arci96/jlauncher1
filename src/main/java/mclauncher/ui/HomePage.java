@@ -1,5 +1,6 @@
 package mclauncher.ui;
 
+import mclauncher.I18n;
 import mclauncher.*;
 
 import javax.imageio.ImageIO;
@@ -12,7 +13,7 @@ import java.util.List;
 
 /** Startseite: Titelbild, Spielen-Knopf, Auswahl, Neuigkeiten, Downloads, Schnellzugriff, Server. */
 public class HomePage extends Page {
-    private final Widgets.GlowButton playBtn = new Widgets.GlowButton("SPIELEN", Widgets.Style.PRIMARY);
+    private final Widgets.GlowButton playBtn = new Widgets.GlowButton(I18n.t("SPIELEN"), Widgets.Style.PRIMARY);
     private final JComboBox<Instance> profileBox = new JComboBox<>();
     private final JComboBox<String> versionBox = new JComboBox<>();
     private final JComboBox<Loaders.Type> loaderBox = new JComboBox<>(Loaders.Type.values());
@@ -34,7 +35,7 @@ public class HomePage extends Page {
         // ---------------- linke Spalte
         Widgets.VPanel left = new Widgets.VPanel();
 
-        HeroPanel hero = new HeroPanel("JLAUNCHER", "ENTDECKEN  \u00B7  BAUEN  \u00B7  \u00DCBERLEBEN");
+        HeroPanel hero = new HeroPanel("JLAUNCHER", I18n.t("ENTDECKEN  \u00B7  BAUEN  \u00B7  \u00DCBERLEBEN"));
         hero.setPreferredSize(new Dimension(100, 330));
         hero.setMaximumSize(new Dimension(Integer.MAX_VALUE, 330));
         playBtn.setFont(Theme.font(Font.BOLD, 24f));
@@ -54,13 +55,13 @@ public class HomePage extends Page {
         JPanel three = new JPanel(new GridLayout(1, 3, 10, 0));
         three.setOpaque(false);
         three.add(selector("Version", versionBox));
-        three.add(selector("Mod-Loader", loaderBox));
-        three.add(selector("Profil", profileBox));
+        three.add(selector(I18n.t("Mod-Loader"), loaderBox));
+        three.add(selector(I18n.t("Profil"), profileBox));
         selectors.add(three, BorderLayout.CENTER);
         Widgets.GlowButton gear = new Widgets.GlowButton("\u2699", Widgets.Style.DARK);
         gear.setFont(Theme.symbolFont(22f));
         gear.setPreferredSize(new Dimension(60, 60));
-        gear.setToolTipText("Profil bearbeiten (Version, RAM, Java, Spielverzeichnis)");
+        gear.setToolTipText(I18n.t("Profil bearbeiten (Version, RAM, Java, Spielverzeichnis)"));
         gear.addActionListener(e -> {
             Instance cur = AppState.current();
             if (cur == null) win.newProfile(); else win.editProfile(cur);
@@ -75,11 +76,11 @@ public class HomePage extends Page {
         left.add(hint);
         left.add(Box.createVerticalStrut(10));
 
-        left.add(sectionHeader("Neuigkeiten", null));
+        left.add(sectionHeader(I18n.t("Neuigkeiten"), null));
         newsRow.setOpaque(false);
         newsRow.setPreferredSize(new Dimension(100, 150));
         newsRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
-        newsRow.add(placeholderCard("Lade Neuigkeiten …"));
+        newsRow.add(placeholderCard(I18n.t("Lade Neuigkeiten …")));
         align(newsRow);
         left.add(newsRow);
         left.add(Box.createVerticalStrut(14));
@@ -99,13 +100,13 @@ public class HomePage extends Page {
         right.setPreferredSize(new Dimension(300, 100));
 
         Widgets.RoundPanel quick = new Widgets.RoundPanel(new BorderLayout(0, 10));
-        quick.add(Widgets.title("Schnellzugriff", 18f), BorderLayout.NORTH);
+        quick.add(Widgets.title(I18n.t("Schnellzugriff"), 18f), BorderLayout.NORTH);
         JPanel grid = new JPanel(new GridLayout(2, 2, 8, 8));
         grid.setOpaque(false);
-        grid.add(tile("Versionen", "versions"));
+        grid.add(tile(I18n.t("Versionen"), "versions"));
         grid.add(tile("Mods", "mods"));
-        grid.add(tile("Ressourcen", "resourcepacks"));
-        grid.add(tile("Shader", "shaders"));
+        grid.add(tile(I18n.t("Ressourcen"), "resourcepacks"));
+        grid.add(tile(I18n.t("Shader"), "shaders"));
         quick.add(grid, BorderLayout.CENTER);
         quick.setMaximumSize(new Dimension(Integer.MAX_VALUE, 190));
         quick.setAlignmentX(LEFT_ALIGNMENT);
@@ -120,8 +121,8 @@ public class HomePage extends Page {
         };
         JPanel sh = new JPanel(new BorderLayout());
         sh.setOpaque(false);
-        sh.add(Widgets.title("Server", 18f), BorderLayout.WEST);
-        Widgets.GlowButton more = new Widgets.GlowButton("Mehr anzeigen \u2192", Widgets.Style.GHOST);
+        sh.add(Widgets.title(I18n.t("Server"), 18f), BorderLayout.WEST);
+        Widgets.GlowButton more = new Widgets.GlowButton(I18n.t("Mehr anzeigen \u2192"), Widgets.Style.GHOST);
         more.addActionListener(e -> win.navigate("servers"));
         sh.add(more, BorderLayout.EAST);
         servers.add(sh, BorderLayout.NORTH);
@@ -214,7 +215,7 @@ public class HomePage extends Page {
     private void changeSelection(Instance inst, String mc, Loaders.Type type) {
         if (mc.equals(inst.mcVersion) && type == inst.type()) return;
         if (GameRunner.state() != GameRunner.State.IDLE) {
-            hint.setText("Während des Spielens kann die Version nicht geändert werden.");
+            hint.setText(I18n.t("Während des Spielens kann die Version nicht geändert werden."));
             refreshSelectors();
             return;
         }
@@ -222,13 +223,13 @@ public class HomePage extends Page {
             apply(inst, mc, type, "");
             return;
         }
-        hint.setText("Suche " + type.label + "-Version für " + mc + " …");
+        hint.setText(I18n.t("Suche ") + type.label + I18n.t("-Version für ") + mc + " …");
         Util.async(() -> {
             try {
                 List<String> versions = Loaders.versions(type, mc);
                 SwingUtilities.invokeLater(() -> {
                     if (versions.isEmpty()) {
-                        hint.setText(type.label + " ist für Minecraft " + mc + " nicht verfügbar.");
+                        hint.setText(type.label + I18n.t(" ist für Minecraft ") + mc + I18n.t(" nicht verfügbar."));
                         refreshSelectors();
                     } else {
                         apply(inst, mc, type, versions.get(0));
@@ -236,7 +237,7 @@ public class HomePage extends Page {
                 });
             } catch (Exception ex) {
                 SwingUtilities.invokeLater(() -> {
-                    hint.setText("Fehler: " + ex.getMessage());
+                    hint.setText(I18n.t("Fehler: ") + ex.getMessage());
                     refreshSelectors();
                 });
             }
@@ -249,7 +250,7 @@ public class HomePage extends Page {
         inst.loaderVersion = loaderVersion;
         inst.versionId = null;
         Store.save();
-        hint.setText("Profil \"" + inst.name + "\": " + inst.label()
+        hint.setText(I18n.t("Profil \"") + inst.name + "\": " + inst.label()
                 + (loaderVersion.isBlank() ? "" : " (" + type.label + " " + loaderVersion + ")"));
         AppState.fire();
     }
@@ -257,17 +258,17 @@ public class HomePage extends Page {
     private void updatePlayButton() {
         switch (GameRunner.state()) {
             case IDLE -> {
-                playBtn.setText(Store.data.instances.isEmpty() ? "PROFIL ERSTELLEN" : "SPIELEN");
+                playBtn.setText(Store.data.instances.isEmpty() ? I18n.t("PROFIL ERSTELLEN") : I18n.t("SPIELEN"));
                 playBtn.style(Widgets.Style.PRIMARY);
                 playBtn.setEnabled(true);
             }
             case PREPARING -> {
-                playBtn.setText("ABBRECHEN \u2013 wird vorbereitet …");
+                playBtn.setText(I18n.t("ABBRECHEN \u2013 wird vorbereitet …"));
                 playBtn.style(Widgets.Style.DARK);
                 playBtn.setEnabled(true);
             }
             default -> {
-                playBtn.setText("BEENDEN");
+                playBtn.setText(I18n.t("BEENDEN"));
                 playBtn.style(Widgets.Style.DANGER);
                 playBtn.setEnabled(true);
             }
@@ -285,7 +286,7 @@ public class HomePage extends Page {
         if (latest == null) {
             if (stripTask != null || stripHolder.getComponentCount() == 0) {
                 stripHolder.removeAll();
-                stripHolder.add(placeholderCard("Keine aktiven Downloads"), BorderLayout.CENTER);
+                stripHolder.add(placeholderCard(I18n.t("Keine aktiven Downloads")), BorderLayout.CENTER);
                 stripTask = null;
                 stripRow = null;
                 stripHolder.revalidate();
@@ -311,7 +312,7 @@ public class HomePage extends Page {
         serverBox.removeAll();
         List<Store.ServerEntry> list = Store.data.servers;
         if (list.isEmpty()) {
-            serverBox.add(Widgets.muted("<html>Noch keine Server gespeichert.<br>Füge welche unter \"Server\" hinzu.</html>"));
+            serverBox.add(Widgets.muted(I18n.t("<html>Noch keine Server gespeichert.<br>Füge welche unter \"Server\" hinzu.</html>")));
         }
         for (int i = 0; i < Math.min(5, list.size()); i++) {
             Store.ServerEntry s = list.get(i);
@@ -349,7 +350,7 @@ public class HomePage extends Page {
             } catch (Exception ex) {
                 SwingUtilities.invokeLater(() -> {
                     newsRow.removeAll();
-                    newsRow.add(placeholderCard("Neuigkeiten konnten nicht geladen werden."));
+                    newsRow.add(placeholderCard(I18n.t("Neuigkeiten konnten nicht geladen werden.")));
                     newsRow.revalidate();
                     newsRow.repaint();
                 });
@@ -359,7 +360,7 @@ public class HomePage extends Page {
 
     private void showNews(List<News.Item> items) {
         newsRow.removeAll();
-        if (items.isEmpty()) newsRow.add(placeholderCard("Keine Neuigkeiten."));
+        if (items.isEmpty()) newsRow.add(placeholderCard(I18n.t("Keine Neuigkeiten.")));
         for (News.Item it : items) {
             Widgets.RoundPanel card = new Widgets.RoundPanel(new BorderLayout(0, 6)).pad(10, 12, 10, 12);
             JLabel img = new JLabel("", SwingConstants.CENTER);
@@ -417,7 +418,7 @@ public class HomePage extends Page {
         p.setOpaque(false);
         p.add(Widgets.title(title, 18f), BorderLayout.WEST);
         if (page != null) {
-            Widgets.GlowButton b = new Widgets.GlowButton("Mehr anzeigen \u2192", Widgets.Style.GHOST);
+            Widgets.GlowButton b = new Widgets.GlowButton(I18n.t("Mehr anzeigen \u2192"), Widgets.Style.GHOST);
             b.addActionListener(e -> win.navigate(page));
             p.add(b, BorderLayout.EAST);
         }

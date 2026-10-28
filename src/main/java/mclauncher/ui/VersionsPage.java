@@ -1,5 +1,6 @@
 package mclauncher.ui;
 
+import mclauncher.I18n;
 import mclauncher.*;
 
 import javax.swing.*;
@@ -15,21 +16,21 @@ public class VersionsPage extends Page {
     private final DefaultListModel<Versions.Entry> model = new DefaultListModel<>();
     private final JList<Versions.Entry> list = new JList<>(model);
     private final JTextField filter = new JTextField();
-    private final JCheckBox snaps = new JCheckBox("Snapshots und alte Versionen");
+    private final JCheckBox snaps = new JCheckBox(I18n.t("Snapshots und alte Versionen"));
     private final JLabel status = new JLabel(" ");
-    private final Widgets.GlowButton downloadBtn = new Widgets.GlowButton("Herunterladen", Widgets.Style.DARK);
-    private final Widgets.GlowButton profileBtn = new Widgets.GlowButton("Neues Profil mit dieser Version", Widgets.Style.PRIMARY);
+    private final Widgets.GlowButton downloadBtn = new Widgets.GlowButton(I18n.t("Herunterladen"), Widgets.Style.DARK);
+    private final Widgets.GlowButton profileBtn = new Widgets.GlowButton(I18n.t("Neues Profil mit dieser Version"), Widgets.Style.PRIMARY);
     private List<Versions.Entry> all = new ArrayList<>();
     private boolean loading;
 
     public VersionsPage(MainWindow win) {
         super(win);
-        add(header("Versionen", "Alle Minecraft-Versionen von Mojang"), BorderLayout.NORTH);
+        add(header(I18n.t("Versionen"), I18n.t("Alle Minecraft-Versionen von Mojang")), BorderLayout.NORTH);
 
         Widgets.RoundPanel card = new Widgets.RoundPanel(new BorderLayout(0, 10));
         JPanel top = new JPanel(new BorderLayout(12, 0));
         top.setOpaque(false);
-        filter.putClientProperty("JTextField.placeholderText", "Version suchen, z. B. 1.21");
+        filter.putClientProperty("JTextField.placeholderText", I18n.t("Version suchen, z. B. 1.21"));
         top.add(filter, BorderLayout.CENTER);
         top.add(snaps, BorderLayout.EAST);
         card.add(top, BorderLayout.NORTH);
@@ -43,7 +44,7 @@ public class VersionsPage extends Page {
                 Versions.Entry e = (Versions.Entry) v;
                 boolean installed = Files.exists(AppPaths.VERSIONS.resolve(e.id()).resolve(e.id() + ".jar"));
                 setText("<html><b>" + e.id() + "</b> &nbsp;<span style='color:gray'>" + typeName(e.type()) + "</span>"
-                        + (installed ? " &nbsp;<span style='color:#4ADE80'>\u2713 heruntergeladen</span>" : "") + "</html>");
+                        + (installed ? I18n.t(" &nbsp;<span style='color:#4ADE80'>\u2713 heruntergeladen</span>") : "") + "</html>");
                 setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
                 return this;
             }
@@ -85,13 +86,13 @@ public class VersionsPage extends Page {
     public void onShow() {
         if (all.isEmpty() && !loading) {
             loading = true;
-            status.setText("Lade Versionsliste …");
+            status.setText(I18n.t("Lade Versionsliste …"));
             Util.async(() -> {
                 try {
                     List<Versions.Entry> m = new ArrayList<>(Versions.manifest());
                     SwingUtilities.invokeLater(() -> { all = m; loading = false; applyFilter(); });
                 } catch (Exception ex) {
-                    SwingUtilities.invokeLater(() -> { loading = false; status.setText("Fehler: " + ex.getMessage()); });
+                    SwingUtilities.invokeLater(() -> { loading = false; status.setText(I18n.t("Fehler: ") + ex.getMessage()); });
                 }
             });
         } else {
@@ -107,20 +108,20 @@ public class VersionsPage extends Page {
             if (!q.isEmpty() && !e.id().toLowerCase().contains(q)) continue;
             model.addElement(e);
         }
-        status.setText(model.size() + " Versionen");
+        status.setText(model.size() + I18n.t(" Versionen"));
     }
 
     private void download() {
         Versions.Entry e = list.getSelectedValue();
         if (e == null) return;
         String id = e.id();
-        status.setText("Download von " + id + " gestartet (siehe Downloads).");
-        Downloads.start("Minecraft " + id + " herunterladen", p -> {
+        status.setText(I18n.t("Download von ") + id + I18n.t(" gestartet (siehe Downloads)."));
+        Downloads.start("Minecraft " + id + I18n.t(" herunterladen"), p -> {
             Versions.installVanillaJson(id);
             Versions.installFiles(id, p);
         }, err -> SwingUtilities.invokeLater(() -> {
             list.repaint();
-            status.setText(err == null ? "Minecraft " + id + " ist bereit." : "Fehler: " + err.getMessage());
+            status.setText(err == null ? "Minecraft " + id + I18n.t(" ist bereit.") : I18n.t("Fehler: ") + err.getMessage());
         }));
     }
 

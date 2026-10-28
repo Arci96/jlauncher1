@@ -31,7 +31,7 @@ public final class MrPack {
         Path gameDir = null;
         try (ZipFile zf = new ZipFile(pack.toFile())) {
             ZipEntry idx = zf.getEntry("modrinth.index.json");
-            if (idx == null) throw new IOException("Das ist kein gültiges Modrinth-Modpack (modrinth.index.json fehlt).");
+            if (idx == null) throw new IOException(I18n.t("Das ist kein gültiges Modrinth-Modpack (modrinth.index.json fehlt)."));
             JsonObject index;
             try (InputStream in = zf.getInputStream(idx)) {
                 index = JsonParser.parseString(new String(in.readAllBytes(), StandardCharsets.UTF_8)).getAsJsonObject();
@@ -39,7 +39,7 @@ public final class MrPack {
 
             JsonObject deps = index.has("dependencies") ? index.getAsJsonObject("dependencies") : null;
             String mc = Util.str(deps, "minecraft");
-            if (mc == null) throw new IOException("Im Modpack ist keine Minecraft-Version angegeben.");
+            if (mc == null) throw new IOException(I18n.t("Im Modpack ist keine Minecraft-Version angegeben."));
 
             Loaders.Type type = Loaders.Type.VANILLA;
             String lv = "";
@@ -67,22 +67,22 @@ public final class MrPack {
                     if (f.has("env") && "unsupported".equals(Util.str(f.getAsJsonObject("env"), "client"))) continue;
                     String rel = f.get("path").getAsString();
                     Path target = base.resolve(rel).normalize();
-                    if (!target.startsWith(base)) throw new IOException("Unsicherer Pfad im Modpack: " + rel);
+                    if (!target.startsWith(base)) throw new IOException(I18n.t("Unsicherer Pfad im Modpack: ") + rel);
                     String url = f.getAsJsonArray("downloads").get(0).getAsString();
                     String host = URI.create(url).getHost();
                     if (host == null || !HOSTS.contains(host.toLowerCase())) {
-                        throw new IOException("Download-Quelle im Modpack nicht erlaubt: " + host);
+                        throw new IOException(I18n.t("Download-Quelle im Modpack nicht erlaubt: ") + host);
                     }
                     String sha1 = f.has("hashes") ? Util.str(f.getAsJsonObject("hashes"), "sha1") : null;
                     tasks.add(new Util.Dl(url, target, sha1, true));
                 }
             }
-            log.accept("Modpack \"" + inst.name + "\": " + tasks.size() + " Dateien, Minecraft " + mc
+            log.accept(I18n.t("Modpack \"") + inst.name + "\": " + tasks.size() + I18n.t(" Dateien, Minecraft ") + mc
                     + (type == Loaders.Type.VANILLA ? "" : ", " + type.label + " " + lv));
-            p.update("Lade Modpack-Dateien …", 0);
-            Util.downloadAll(tasks, 8, p, "Modpack-Dateien");
+            p.update(I18n.t("Lade Modpack-Dateien …"), 0);
+            Util.downloadAll(tasks, 8, p, I18n.t("Modpack-Dateien"));
 
-            p.update("Entpacke Konfigurationen …", -1);
+            p.update(I18n.t("Entpacke Konfigurationen …"), -1);
             for (String prefix : new String[]{"overrides/", "client-overrides/"}) {
                 Enumeration<? extends ZipEntry> en = zf.entries();
                 while (en.hasMoreElements()) {

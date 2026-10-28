@@ -50,14 +50,14 @@ public final class CurseForge {
     }
 
     private static JsonObject get(String path) throws IOException {
-        if (!hasKey()) throw new IOException("Kein CurseForge-API-Schlüssel eingetragen (Einstellungen → CurseForge).");
+        if (!hasKey()) throw new IOException(I18n.t("Kein CurseForge-API-Schlüssel eingetragen (Einstellungen → CurseForge)."));
         try {
             String body = Util.get(API + path, Map.of("x-api-key", Store.data.config.curseForgeKey.trim(), "Accept", "application/json"));
             return JsonParser.parseString(body).getAsJsonObject();
         } catch (IOException e) {
             String m = e.getMessage() == null ? "" : e.getMessage();
             if (m.contains("HTTP 401") || m.contains("HTTP 403")) {
-                throw new IOException("Der CurseForge-API-Schlüssel wurde abgelehnt. Bitte prüfe ihn in den Einstellungen.");
+                throw new IOException(I18n.t("Der CurseForge-API-Schlüssel wurde abgelehnt. Bitte prüfe ihn in den Einstellungen."));
             }
             throw e;
         }
@@ -95,7 +95,7 @@ public final class CurseForge {
         String path = "/mods/" + Util.enc(modId) + "/files?gameVersion=" + Util.enc(inst.mcVersion) + "&pageSize=30"
                 + (type == ContentType.MOD && lt > 0 ? "&modLoaderType=" + lt : "");
         JsonArray arr = get(path).getAsJsonArray("data");
-        if (arr.isEmpty()) throw new IOException("Keine passende Datei für " + inst.label() + " gefunden.");
+        if (arr.isEmpty()) throw new IOException(I18n.t("Keine passende Datei für ") + inst.label() + I18n.t(" gefunden."));
 
         List<JsonObject> files = new ArrayList<>();
         for (JsonElement e : arr) files.add(e.getAsJsonObject());
@@ -116,7 +116,7 @@ public final class CurseForge {
                 try {
                     install(String.valueOf(dep.get("modId").getAsInt()), inst, type, visited, log);
                 } catch (IOException ex) {
-                    log.accept("Abhängigkeit konnte nicht installiert werden: " + ex.getMessage());
+                    log.accept(I18n.t("Abhängigkeit konnte nicht installiert werden: ") + ex.getMessage());
                 }
             }
         }
@@ -129,9 +129,9 @@ public final class CurseForge {
                 String u = info.has("links") ? Util.str(info.getAsJsonObject("links"), "websiteUrl") : null;
                 if (u != null) site = u;
             } catch (IOException ignored) { }
-            throw new IOException("Der Autor erlaubt keinen Download durch andere Programme. Lade \"" + fileName
-                    + "\" manuell von " + site + " und lege die Datei in den Ordner "
-                    + inst.contentDir(type).getFileName() + " des Profils.");
+            throw new IOException(I18n.t("Der Autor erlaubt keinen Download durch andere Programme. Lade \"") + fileName
+                    + I18n.t("\" manuell von ") + site + I18n.t(" und lege die Datei in den Ordner ")
+                    + inst.contentDir(type).getFileName() + I18n.t(" des Profils."));
         }
 
         String sha1 = null;
@@ -143,9 +143,9 @@ public final class CurseForge {
         }
         Path dir = inst.contentDir(type);
         Path target = dir.resolve(fileName).normalize();
-        if (!target.startsWith(dir.normalize())) throw new IOException("Ungültiger Dateiname: " + fileName);
+        if (!target.startsWith(dir.normalize())) throw new IOException(I18n.t("Ungültiger Dateiname: ") + fileName);
         Files.createDirectories(dir);
         Util.download(chosen.get("downloadUrl").getAsString(), target, sha1, true);
-        log.accept("Installiert: " + fileName);
+        log.accept(I18n.t("Installiert: ") + fileName);
     }
 }

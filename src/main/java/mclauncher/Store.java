@@ -29,6 +29,15 @@ public final class Store {
         public boolean minimizeOnLaunch = true;
         public int defaultFpsLimit = 0;
         public String curseForgeKey = "";
+        public String msSkinUrl = "";
+        public boolean msTokenSecure = false;    // Token liegt im Schlüsselbund statt in dieser Datei
+        public boolean checkUpdates = true;
+        public String updateRepo = "";           // GitHub: Benutzer/Repository
+        public long lastUpdateCheck = 0;
+        public String skippedVersion = "";
+        public String heroScene = "SUNSET";
+        public String heroImage = "";
+        public String language = "";   // "" = nach Systemsprache, sonst "de" oder "en"
     }
 
     public static class ServerEntry {
@@ -62,7 +71,7 @@ public final class Store {
                 }
             }
         } catch (IOException | JsonSyntaxException e) {
-            System.err.println("Konfiguration konnte nicht geladen werden: " + e);
+            System.err.println(I18n.t("Konfiguration konnte nicht geladen werden: ") + e);
             // Defekte Datei sichern, statt sie beim nächsten Speichern stillschweigend zu überschreiben
             try {
                 Files.copy(AppPaths.CONFIG, AppPaths.CONFIG.resolveSibling("launcher.json.defekt"), StandardCopyOption.REPLACE_EXISTING);
@@ -82,7 +91,7 @@ public final class Store {
                 Files.move(tmp, AppPaths.CONFIG, StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (IOException e) {
-            System.err.println("Konfiguration konnte nicht gespeichert werden: " + e);
+            System.err.println(I18n.t("Konfiguration konnte nicht gespeichert werden: ") + e);
         }
     }
 }

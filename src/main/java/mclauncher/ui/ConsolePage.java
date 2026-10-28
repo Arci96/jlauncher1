@@ -1,5 +1,6 @@
 package mclauncher.ui;
 
+import mclauncher.I18n;
 import mclauncher.GameRunner;
 
 import javax.swing.*;
@@ -12,12 +13,12 @@ public class ConsolePage extends Page {
 
     public ConsolePage(MainWindow win) {
         super(win);
-        Widgets.GlowButton clear = new Widgets.GlowButton("Leeren", Widgets.Style.DARK);
-        Widgets.GlowButton copy = new Widgets.GlowButton("Kopieren", Widgets.Style.DARK);
+        Widgets.GlowButton clear = new Widgets.GlowButton(I18n.t("Leeren"), Widgets.Style.DARK);
+        Widgets.GlowButton copy = new Widgets.GlowButton(I18n.t("Kopieren"), Widgets.Style.DARK);
         clear.addActionListener(e -> { area.setText(""); GameRunner.clearHistory(); });
         copy.addActionListener(e -> Toolkit.getDefaultToolkit().getSystemClipboard()
                 .setContents(new StringSelection(area.getText()), null));
-        add(header("Konsole", "Spielausgabe und Fehlermeldungen – hier findest du die Ursache, wenn etwas nicht startet", clear, copy), BorderLayout.NORTH);
+        add(header(I18n.t("Konsole"), I18n.t("Spielausgabe und Fehlermeldungen – hier findest du die Ursache, wenn etwas nicht startet"), clear, copy), BorderLayout.NORTH);
 
         area.setEditable(false);
         area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));

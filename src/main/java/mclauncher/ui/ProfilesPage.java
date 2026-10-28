@@ -1,5 +1,6 @@
 package mclauncher.ui;
 
+import mclauncher.I18n;
 import mclauncher.Downloads;
 import mclauncher.GameRunner;
 import mclauncher.Instance;
@@ -17,18 +18,18 @@ import java.util.Date;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** "Spielen": Liste aller Profile. */
+/** I18n.t("Spielen"): Liste aller Profile. */
 public class ProfilesPage extends Page {
     private final Widgets.VPanel list = new Widgets.VPanel();
 
     public ProfilesPage(MainWindow win) {
         super(win);
-        Widgets.GlowButton add = new Widgets.GlowButton("+  Neues Profil", Widgets.Style.PRIMARY);
+        Widgets.GlowButton add = new Widgets.GlowButton(I18n.t("+  Neues Profil"), Widgets.Style.PRIMARY);
         add.addActionListener(e -> win.newProfile());
-        Widgets.GlowButton importBtn = new Widgets.GlowButton("Modpack importieren", Widgets.Style.DARK);
-        importBtn.setToolTipText("Modrinth-Modpack (.mrpack) als neues Profil installieren");
+        Widgets.GlowButton importBtn = new Widgets.GlowButton(I18n.t("Modpack importieren"), Widgets.Style.DARK);
+        importBtn.setToolTipText(I18n.t("Modrinth-Modpack (.mrpack) als neues Profil installieren"));
         importBtn.addActionListener(e -> importPack());
-        add(header("Profile", "Jedes Profil hat eigene Welten, Mods und Einstellungen", importBtn, add), BorderLayout.NORTH);
+        add(header(I18n.t("Profile"), I18n.t("Jedes Profil hat eigene Welten, Mods und Einstellungen"), importBtn, add), BorderLayout.NORTH);
         add(Widgets.scroll(list), BorderLayout.CENTER);
         rebuild();
     }
@@ -40,7 +41,7 @@ public class ProfilesPage extends Page {
         list.removeAll();
         Instance cur = AppState.current();
         if (Store.data.instances.isEmpty()) {
-            JLabel l = Widgets.muted("Noch kein Profil. Klicke oben auf \"Neues Profil\".");
+            JLabel l = Widgets.muted(I18n.t("Noch kein Profil. Klicke oben auf \"Neues Profil\"."));
             l.setAlignmentX(LEFT_ALIGNMENT);
             list.add(l);
         }
@@ -54,16 +55,16 @@ public class ProfilesPage extends Page {
 
     private void importPack() {
         JFileChooser fc = new JFileChooser();
-        fc.setFileFilter(new FileNameExtensionFilter("Modrinth-Modpack (*.mrpack)", "mrpack"));
+        fc.setFileFilter(new FileNameExtensionFilter(I18n.t("Modrinth-Modpack (*.mrpack)"), "mrpack"));
         if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
         java.nio.file.Path file = fc.getSelectedFile().toPath();
         AtomicReference<Instance> ref = new AtomicReference<>();
-        Downloads.start("Modpack importieren: " + file.getFileName(),
+        Downloads.start(I18n.t("Modpack importieren: ") + file.getFileName(),
                 p -> ref.set(MrPack.importPack(file, p, GameRunner::log)),
                 err -> SwingUtilities.invokeLater(() -> {
                     if (err != null) {
                         if (!(err instanceof CancellationException)) {
-                            JOptionPane.showMessageDialog(this, err.getMessage(), "Import fehlgeschlagen", JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(this, err.getMessage(), I18n.t("Import fehlgeschlagen"), JOptionPane.ERROR_MESSAGE);
                         }
                         return;
                     }
@@ -71,22 +72,22 @@ public class ProfilesPage extends Page {
                     Store.data.instances.add(i);
                     Store.save();
                     AppState.setCurrent(i);
-                    JOptionPane.showMessageDialog(this, "Das Modpack \"" + i.name + "\" wurde als neues Profil angelegt.\n"
-                            + "Beim ersten Start wird noch der Mod-Loader installiert.");
+                    JOptionPane.showMessageDialog(this, I18n.t("Das Modpack \"") + i.name + I18n.t("\" wurde als neues Profil angelegt.\n")
+                            + I18n.t("Beim ersten Start wird noch der Mod-Loader installiert."));
                 }));
     }
 
     private void duplicate(Instance inst) {
         if (GameRunner.state() != GameRunner.State.IDLE && GameRunner.running() == inst) {
-            JOptionPane.showMessageDialog(this, "Beende Minecraft zuerst, bevor du dieses Profil kopierst.");
+            JOptionPane.showMessageDialog(this, I18n.t("Beende Minecraft zuerst, bevor du dieses Profil kopierst."));
             return;
         }
         AtomicReference<Instance> ref = new AtomicReference<>();
-        Downloads.start("Profil kopieren: " + inst.name, p -> ref.set(ProfileTools.duplicate(inst, p)),
+        Downloads.start(I18n.t("Profil kopieren: ") + inst.name, p -> ref.set(ProfileTools.duplicate(inst, p)),
                 err -> SwingUtilities.invokeLater(() -> {
                     if (err != null) {
                         if (!(err instanceof CancellationException)) {
-                            JOptionPane.showMessageDialog(this, err.getMessage(), "Kopieren fehlgeschlagen", JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(this, err.getMessage(), I18n.t("Kopieren fehlgeschlagen"), JOptionPane.ERROR_MESSAGE);
                         }
                         return;
                     }
@@ -116,8 +117,8 @@ public class ProfilesPage extends Page {
         JLabel name = new JLabel(inst.name);
         name.setFont(Theme.font(Font.BOLD, 17f));
         JLabel ver = new JLabel(inst.label() + (inst.loaderVersion == null || inst.loaderVersion.isBlank() ? "" : "  (" + inst.loaderVersion + ")"));
-        String last = inst.lastPlayed == 0 ? "noch nie gespielt" : "zuletzt " + new SimpleDateFormat("dd.MM.yyyy HH:mm").format(new Date(inst.lastPlayed));
-        JLabel info = Widgets.muted("RAM " + inst.ramMin + "–" + inst.ramMax + " MB  ·  " + last + (inst.hasCustomDir() ? "  ·  eigener Ordner" : ""));
+        String last = inst.lastPlayed == 0 ? I18n.t("noch nie gespielt") : I18n.t("zuletzt ") + new SimpleDateFormat(I18n.t("dd.MM.yyyy HH:mm")).format(new Date(inst.lastPlayed));
+        JLabel info = Widgets.muted("RAM " + inst.ramMin + "–" + inst.ramMax + " MB  ·  " + last + (inst.hasCustomDir() ? I18n.t("  ·  eigener Ordner") : ""));
         mid.add(Box.createVerticalGlue());
         mid.add(name);
         mid.add(ver);
@@ -125,10 +126,10 @@ public class ProfilesPage extends Page {
         mid.add(Box.createVerticalGlue());
         c.add(mid, BorderLayout.CENTER);
 
-        Widgets.GlowButton play = new Widgets.GlowButton("Spielen", Widgets.Style.PRIMARY);
-        Widgets.GlowButton edit = new Widgets.GlowButton("Bearbeiten", Widgets.Style.DARK);
-        Widgets.GlowButton copy = new Widgets.GlowButton("Kopieren", Widgets.Style.DARK);
-        Widgets.GlowButton folder = new Widgets.GlowButton("Ordner", Widgets.Style.DARK);
+        Widgets.GlowButton play = new Widgets.GlowButton(I18n.t("Spielen"), Widgets.Style.PRIMARY);
+        Widgets.GlowButton edit = new Widgets.GlowButton(I18n.t("Bearbeiten"), Widgets.Style.DARK);
+        Widgets.GlowButton copy = new Widgets.GlowButton(I18n.t("Kopieren"), Widgets.Style.DARK);
+        Widgets.GlowButton folder = new Widgets.GlowButton(I18n.t("Ordner"), Widgets.Style.DARK);
         Widgets.GlowButton del = new Widgets.GlowButton("\u2715", Widgets.Style.DARK);
         play.addActionListener(e -> {
             AppState.setCurrent(inst);
@@ -136,14 +137,14 @@ public class ProfilesPage extends Page {
                 win.play(inst, null);
                 win.navigate("home");
             } else {
-                JOptionPane.showMessageDialog(this, "Minecraft läuft bereits oder wird gerade vorbereitet.");
+                JOptionPane.showMessageDialog(this, I18n.t("Minecraft läuft bereits oder wird gerade vorbereitet."));
             }
         });
         edit.addActionListener(e -> win.editProfile(inst));
         folder.addActionListener(e -> Widgets.openFolder(this, inst.dir()));
-        copy.setToolTipText("Profil samt Welten und Mods kopieren, z. B. zum Testen neuer Mods");
+        copy.setToolTipText(I18n.t("Profil samt Welten und Mods kopieren, z. B. zum Testen neuer Mods"));
         copy.addActionListener(e -> duplicate(inst));
-        del.setToolTipText("Profil löschen");
+        del.setToolTipText(I18n.t("Profil löschen"));
         del.addActionListener(e -> win.deleteProfile(inst));
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         btns.setOpaque(false);

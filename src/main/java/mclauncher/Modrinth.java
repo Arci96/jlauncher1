@@ -67,7 +67,7 @@ public final class Modrinth {
             url += "&loaders=" + Util.enc(strings(loaderNames(inst.type())).toString());
         }
         JsonArray versions = Util.getJsonAny(url).getAsJsonArray();
-        if (versions.isEmpty()) throw new IOException("Keine passende Version für " + inst.label() + " gefunden.");
+        if (versions.isEmpty()) throw new IOException(I18n.t("Keine passende Version für ") + inst.label() + I18n.t(" gefunden."));
 
         JsonObject chosen = versions.get(0).getAsJsonObject();
         for (JsonElement e : versions) {
@@ -86,7 +86,7 @@ public final class Modrinth {
                 try {
                     install(depId, inst, type, visited, log);
                 } catch (IOException ex) {
-                    log.accept("Abhängigkeit " + depId + " konnte nicht installiert werden: " + ex.getMessage());
+                    log.accept(I18n.t("Abhängigkeit ") + depId + I18n.t(" konnte nicht installiert werden: ") + ex.getMessage());
                 }
             }
         }
@@ -103,11 +103,11 @@ public final class Modrinth {
         String sha1 = file.has("hashes") ? Util.str(file.getAsJsonObject("hashes"), "sha1") : null;
         Path dir = inst.contentDir(type);
         Path target = dir.resolve(filename).normalize();
-        if (!target.startsWith(dir.normalize())) throw new IOException("Ungültiger Dateiname: " + filename);
+        if (!target.startsWith(dir.normalize())) throw new IOException(I18n.t("Ungültiger Dateiname: ") + filename);
 
         Files.createDirectories(dir);
         Util.download(file.get("url").getAsString(), target, sha1, true);
-        log.accept("Installiert: " + filename);
+        log.accept(I18n.t("Installiert: ") + filename);
     }
 
     // ------------------------------------------------------------------ Installierte Inhalte

@@ -13,6 +13,8 @@
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- Wird beim Release per -Dapp.version=... überschrieben; steht danach im Manifest der JAR -->
+    <app.version>1.0.0</app.version>
   </properties>
 
   <dependencies>
@@ -44,6 +46,9 @@
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>mclauncher.Main</mainClass>
+                  <manifestEntries>
+                    <Implementation-Version>${app.version}</Implementation-Version>
+                  </manifestEntries>
                 </transformer>
               </transformers>
               <filters>

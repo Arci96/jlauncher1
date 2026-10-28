@@ -44,7 +44,7 @@ public final class ModUpdates {
         req.add("game_versions", versions);
 
         Util.Resp r = Util.postJson(API + "/version_files/update", req);
-        if (!r.ok()) throw new IOException("Modrinth antwortet mit HTTP " + r.status());
+        if (!r.ok()) throw new IOException(I18n.t("Modrinth antwortet mit HTTP ") + r.status());
 
         for (Map.Entry<String, JsonElement> e : r.json().entrySet()) {
             Path file = byHash.get(e.getKey());
@@ -68,8 +68,8 @@ public final class ModUpdates {
         for (Update u : updates) {
             Path dir = u.file().getParent();
             Path target = dir.resolve(u.newFileName() + (u.disabled() ? ".disabled" : "")).normalize();
-            if (!target.startsWith(dir.normalize())) throw new IOException("Ungültiger Dateiname: " + u.newFileName());
-            log.accept("Aktualisiere " + u.oldName() + " → " + u.newFileName());
+            if (!target.startsWith(dir.normalize())) throw new IOException(I18n.t("Ungültiger Dateiname: ") + u.newFileName());
+            log.accept(I18n.t("Aktualisiere ") + u.oldName() + " → " + u.newFileName());
             Util.download(u.url(), target, u.sha1(), true);
             if (!target.equals(u.file())) Files.deleteIfExists(u.file());
         }

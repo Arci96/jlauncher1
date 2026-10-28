@@ -1,5 +1,6 @@
 package mclauncher.ui;
 
+import mclauncher.I18n;
 import mclauncher.Instance;
 import mclauncher.Loaders;
 import mclauncher.Store;
@@ -19,7 +20,7 @@ public class InstanceDialog extends JDialog {
 
     private final JTextField nameField = new JTextField(24);
     private final JComboBox<String> mcBox = new JComboBox<>();
-    private final JCheckBox snapshots = new JCheckBox("Snapshots anzeigen");
+    private final JCheckBox snapshots = new JCheckBox(I18n.t("Snapshots anzeigen"));
     private final JComboBox<Loaders.Type> loaderBox = new JComboBox<>(Loaders.Type.values());
     private final JComboBox<String> loaderVersionBox = new JComboBox<>();
     private final Widgets.RamControl ramMin;
@@ -34,7 +35,7 @@ public class InstanceDialog extends JDialog {
     private boolean adjusting;
 
     public InstanceDialog(Frame owner, Instance existing) {
-        super(owner, existing == null ? "Neues Profil" : "Profil bearbeiten", true);
+        super(owner, existing == null ? I18n.t("Neues Profil") : I18n.t("Profil bearbeiten"), true);
         this.editing = existing != null;
         this.inst = existing != null ? existing : new Instance();
         if (!editing) {
@@ -58,40 +59,40 @@ public class InstanceDialog extends JDialog {
 
         nameField.setText(inst.name);
         row = addRow(form, c, row, "Name", nameField);
-        row = addRow(form, c, row, "Minecraft-Version", mcBox);
+        row = addRow(form, c, row, I18n.t("Minecraft-Version"), mcBox);
         c.gridx = 1; c.gridy = row++; c.weightx = 1; form.add(snapshots, c);
-        row = addRow(form, c, row, "Mod-Loader", loaderBox);
-        row = addRow(form, c, row, "Loader-Version", loaderVersionBox);
+        row = addRow(form, c, row, I18n.t("Mod-Loader"), loaderBox);
+        row = addRow(form, c, row, I18n.t("Loader-Version"), loaderVersionBox);
         c.gridx = 1; c.gridy = row++; form.add(hint, c);
-        row = addRow(form, c, row, "RAM minimal", ramMin);
-        row = addRow(form, c, row, "RAM maximal", ramMax);
+        row = addRow(form, c, row, I18n.t("RAM minimal"), ramMin);
+        row = addRow(form, c, row, I18n.t("RAM maximal"), ramMax);
 
         fpsSpinner.setValue(Math.max(0, Math.min(260, inst.fpsLimit)));
         JPanel fpsRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         fpsRow.add(fpsSpinner);
-        fpsRow.add(new JLabel("0 = Spiel-Einstellung behalten, 260 = unbegrenzt"));
+        fpsRow.add(new JLabel(I18n.t("0 = Spiel-Einstellung behalten, 260 = unbegrenzt")));
         row = addRow(form, c, row, "FPS-Limit", fpsRow);
 
         javaField.setText(inst.javaPath);
-        javaField.putClientProperty("JTextField.placeholderText", "automatisch");
-        row = addRow(form, c, row, "Java-Pfad", withBrowse(javaField, false));
+        javaField.putClientProperty("JTextField.placeholderText", I18n.t("automatisch"));
+        row = addRow(form, c, row, I18n.t("Java-Pfad"), withBrowse(javaField, false));
 
         jvmField.setText(inst.jvmArgs);
-        jvmField.putClientProperty("JTextField.placeholderText", "z. B. -XX:+UseG1GC");
-        JButton recommended = new JButton("Empfohlen");
-        recommended.setToolTipText("Setzt bewährte Speicherverwaltungs-Argumente (G1GC)");
+        jvmField.putClientProperty("JTextField.placeholderText", I18n.t("z. B. -XX:+UseG1GC"));
+        JButton recommended = new JButton(I18n.t("Empfohlen"));
+        recommended.setToolTipText(I18n.t("Setzt bewährte Speicherverwaltungs-Argumente (G1GC)"));
         recommended.addActionListener(e -> jvmField.setText("-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+DisableExplicitGC"));
         JPanel jvmRow = new JPanel(new BorderLayout(6, 0));
         jvmRow.add(jvmField, BorderLayout.CENTER);
         jvmRow.add(recommended, BorderLayout.EAST);
-        row = addRow(form, c, row, "JVM-Argumente", jvmRow);
+        row = addRow(form, c, row, I18n.t("JVM-Argumente"), jvmRow);
 
         dirField.setText(inst.gameDirOverride);
-        dirField.putClientProperty("JTextField.placeholderText", "Standardordner des Launchers");
-        row = addRow(form, c, row, "Spielverzeichnis", withBrowse(dirField, true));
+        dirField.putClientProperty("JTextField.placeholderText", I18n.t("Standardordner des Launchers"));
+        row = addRow(form, c, row, I18n.t("Spielverzeichnis"), withBrowse(dirField, true));
 
-        JButton ok = new Widgets.GlowButton(editing ? "Speichern" : "Erstellen", Widgets.Style.PRIMARY);
-        JButton cancel = new Widgets.GlowButton("Abbrechen", Widgets.Style.DARK);
+        JButton ok = new Widgets.GlowButton(editing ? I18n.t("Speichern") : I18n.t("Erstellen"), Widgets.Style.PRIMARY);
+        JButton cancel = new Widgets.GlowButton(I18n.t("Abbrechen"), Widgets.Style.DARK);
         ok.addActionListener(e -> onOk());
         cancel.addActionListener(e -> dispose());
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
@@ -162,7 +163,7 @@ public class InstanceDialog extends JDialog {
                     loadLoaderVersions();
                 });
             } catch (Exception ex) {
-                SwingUtilities.invokeLater(() -> hint.setText("Versionsliste konnte nicht geladen werden: " + ex.getMessage()));
+                SwingUtilities.invokeLater(() -> hint.setText(I18n.t("Versionsliste konnte nicht geladen werden: ") + ex.getMessage()));
             }
         });
     }
@@ -179,7 +180,7 @@ public class InstanceDialog extends JDialog {
         }
         int token = ++loadToken;
         loaderVersionBox.setEnabled(false);
-        hint.setText("Lade " + type.label + "-Versionen …");
+        hint.setText(I18n.t("Lade ") + type.label + I18n.t("-Versionen …"));
         Util.async(() -> {
             try {
                 List<String> versions = new ArrayList<>(Loaders.versions(type, mc));
@@ -190,11 +191,11 @@ public class InstanceDialog extends JDialog {
                     for (String v : versions) loaderVersionBox.addItem(v);
                     if (keep != null && !keep.isBlank()) loaderVersionBox.setSelectedItem(keep);
                     loaderVersionBox.setEnabled(!versions.isEmpty());
-                    hint.setText(versions.isEmpty() ? type.label + " ist für " + mc + " nicht verfügbar." : " ");
+                    hint.setText(versions.isEmpty() ? type.label + I18n.t(" ist für ") + mc + I18n.t(" nicht verfügbar.") : " ");
                 });
             } catch (Exception ex) {
                 SwingUtilities.invokeLater(() -> {
-                    if (token == loadToken) hint.setText("Fehler: " + ex.getMessage());
+                    if (token == loadToken) hint.setText(I18n.t("Fehler: ") + ex.getMessage());
                 });
             }
         });
@@ -205,24 +206,24 @@ public class InstanceDialog extends JDialog {
     private void onOk() {
         String name = nameField.getText().trim();
         if (name.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Bitte gib einen Namen ein.", "Hinweis", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, I18n.t("Bitte gib einen Namen ein."), I18n.t("Hinweis"), JOptionPane.WARNING_MESSAGE);
             return;
         }
         String mc = (String) mcBox.getSelectedItem();
         Loaders.Type type = (Loaders.Type) loaderBox.getSelectedItem();
         if (mc == null || type == null) {
-            JOptionPane.showMessageDialog(this, "Bitte wähle eine Minecraft-Version.", "Hinweis", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, I18n.t("Bitte wähle eine Minecraft-Version."), I18n.t("Hinweis"), JOptionPane.WARNING_MESSAGE);
             return;
         }
         String lv = type == Loaders.Type.VANILLA ? "" : (String) loaderVersionBox.getSelectedItem();
         if (type != Loaders.Type.VANILLA && (lv == null || lv.isBlank())) {
-            JOptionPane.showMessageDialog(this, "Für diese Kombination gibt es keine Loader-Version.", "Hinweis", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, I18n.t("Für diese Kombination gibt es keine Loader-Version."), I18n.t("Hinweis"), JOptionPane.WARNING_MESSAGE);
             return;
         }
         boolean changed = !mc.equals(inst.mcVersion) || type != inst.type() || !lv.equals(inst.loaderVersion == null ? "" : inst.loaderVersion);
         if (editing && changed && JOptionPane.showConfirmDialog(this,
-                "Version oder Loader ändern?\nBereits installierte Mods passen eventuell nicht mehr.",
-                "Änderung bestätigen", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) {
+                I18n.t("Version oder Loader ändern?\nBereits installierte Mods passen eventuell nicht mehr."),
+                I18n.t("Änderung bestätigen"), JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) {
             return;
         }
         if (changed || !editing) {

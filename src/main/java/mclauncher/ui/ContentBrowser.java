@@ -1,5 +1,6 @@
 package mclauncher.ui;
 
+import mclauncher.I18n;
 import mclauncher.ContentType;
 import mclauncher.CurseForge;
 import mclauncher.Downloads;
@@ -30,9 +31,9 @@ public class ContentBrowser extends JPanel {
     private final JTextField search = new JTextField();
     private final DefaultListModel<Modrinth.Hit> model = new DefaultListModel<>();
     private final JList<Modrinth.Hit> list = new JList<>(model);
-    private final JButton searchBtn = new Widgets.GlowButton("Suchen", Widgets.Style.DARK);
-    private final JButton moreBtn = new Widgets.GlowButton("Mehr laden", Widgets.Style.DARK);
-    private final JButton installBtn = new Widgets.GlowButton("Installieren", Widgets.Style.PRIMARY);
+    private final JButton searchBtn = new Widgets.GlowButton(I18n.t("Suchen"), Widgets.Style.DARK);
+    private final JButton moreBtn = new Widgets.GlowButton(I18n.t("Mehr laden"), Widgets.Style.DARK);
+    private final JButton installBtn = new Widgets.GlowButton(I18n.t("Installieren"), Widgets.Style.PRIMARY);
     private final JLabel status = new JLabel(" ");
     private int offset;
     private String lastQuery = "";
@@ -47,14 +48,14 @@ public class ContentBrowser extends JPanel {
         setOpaque(false);
 
         if (type == ContentType.MOD && inst.type() == Loaders.Type.VANILLA) {
-            JLabel hintLabel = new JLabel("<html><div style='text-align:center'>Mods brauchen einen Mod-Loader.<br>"
-                    + "Ändere das Profil auf Fabric, Quilt, Forge oder NeoForge.</div></html>", SwingConstants.CENTER);
+            JLabel hintLabel = new JLabel(I18n.t("<html><div style='text-align:center'>Mods brauchen einen Mod-Loader.<br>")
+                    + I18n.t("Ändere das Profil auf Fabric, Quilt, Forge oder NeoForge.</div></html>"), SwingConstants.CENTER);
             hintLabel.setForeground(Theme.MUTED);
             add(hintLabel, BorderLayout.CENTER);
             return;
         }
 
-        search.putClientProperty("JTextField.placeholderText", type.label + " suchen …");
+        search.putClientProperty("JTextField.placeholderText", type.label + I18n.t(" suchen …"));
         JPanel top = new JPanel(new BorderLayout(8, 0));
         top.setOpaque(false);
         top.add(sourceBox, BorderLayout.WEST);
@@ -106,11 +107,11 @@ public class ContentBrowser extends JPanel {
         final int id = ++searchId;
 
         if (src == Source.CURSEFORGE && !CurseForge.hasKey()) {
-            status.setText("CurseForge braucht einen API-Schlüssel (Einstellungen → CurseForge).");
+            status.setText(I18n.t("CurseForge braucht einen API-Schlüssel (Einstellungen → CurseForge)."));
             moreBtn.setEnabled(false);
             return;
         }
-        status.setText("Suche …");
+        status.setText(I18n.t("Suche …"));
         searchBtn.setEnabled(false);
         moreBtn.setEnabled(false);
         Util.async(() -> {
@@ -122,14 +123,14 @@ public class ContentBrowser extends JPanel {
                     if (id != searchId) return;   // veraltete Antwort
                     hits.forEach(model::addElement);
                     offset += hits.size();
-                    status.setText(model.isEmpty() ? "Keine Treffer für " + inst.label() : model.size() + " Treffer (" + src.label + ")");
+                    status.setText(model.isEmpty() ? I18n.t("Keine Treffer für ") + inst.label() : model.size() + I18n.t(" Treffer (") + src.label + ")");
                     searchBtn.setEnabled(true);
                     moreBtn.setEnabled(hits.size() >= 20);
                 });
             } catch (Exception ex) {
                 SwingUtilities.invokeLater(() -> {
                     if (id != searchId) return;
-                    status.setText("Fehler: " + ex.getMessage());
+                    status.setText(I18n.t("Fehler: ") + ex.getMessage());
                     searchBtn.setEnabled(true);
                 });
             }
@@ -141,9 +142,9 @@ public class ContentBrowser extends JPanel {
         if (hit == null) return;
         Source src = lastSource;
         installBtn.setEnabled(false);
-        status.setText("Installiere " + hit.title() + " … (siehe Downloads)");
-        Downloads.start(hit.title() + " installieren (" + src.label + ")", p -> {
-            p.update("Lade " + hit.title(), -1);
+        status.setText(I18n.t("Installiere ") + hit.title() + I18n.t(" … (siehe Downloads)"));
+        Downloads.start(hit.title() + I18n.t(" installieren (") + src.label + ")", p -> {
+            p.update(I18n.t("Lade ") + hit.title(), -1);
             if (src == Source.CURSEFORGE) {
                 CurseForge.install(hit.id(), inst, type, new HashSet<>(), msg -> p.update(msg, -1));
             } else {
@@ -152,10 +153,10 @@ public class ContentBrowser extends JPanel {
         }, err -> SwingUtilities.invokeLater(() -> {
             installBtn.setEnabled(list.getSelectedValue() != null);
             if (err == null) {
-                status.setText(hit.title() + " wurde installiert.");
+                status.setText(hit.title() + I18n.t(" wurde installiert."));
             } else {
-                status.setText("Fehler: " + err.getMessage());
-                JOptionPane.showMessageDialog(this, err.getMessage(), "Installation nicht möglich", JOptionPane.WARNING_MESSAGE);
+                status.setText(I18n.t("Fehler: ") + err.getMessage());
+                JOptionPane.showMessageDialog(this, err.getMessage(), I18n.t("Installation nicht möglich"), JOptionPane.WARNING_MESSAGE);
             }
             onInstalled.run();
         }));
@@ -166,8 +167,8 @@ public class ContentBrowser extends JPanel {
         public Component getListCellRendererComponent(JList<?> l, Object v, int i, boolean sel, boolean focus) {
             super.getListCellRendererComponent(l, v, i, sel, focus);
             Modrinth.Hit h = (Modrinth.Hit) v;
-            setText("<html><b>" + esc(h.title()) + "</b> <span style='color:gray'>von " + esc(h.author())
-                    + " · " + String.format("%,d", h.downloads()) + " Downloads</span><br>"
+            setText("<html><b>" + esc(h.title()) + I18n.t("</b> <span style='color:gray'>von ") + esc(h.author())
+                    + " · " + String.format("%,d", h.downloads()) + I18n.t(" Downloads</span><br>")
                     + "<span style='color:gray'>" + esc(h.description()) + "</span></html>");
             setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
             return this;

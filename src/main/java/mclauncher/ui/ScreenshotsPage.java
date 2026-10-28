@@ -1,5 +1,6 @@
 package mclauncher.ui;
 
+import mclauncher.I18n;
 import mclauncher.Instance;
 import mclauncher.Util;
 
@@ -29,14 +30,14 @@ public class ScreenshotsPage extends Page {
 
     public ScreenshotsPage(MainWindow win) {
         super(win);
-        Widgets.GlowButton open = new Widgets.GlowButton("Ordner öffnen", Widgets.Style.DARK);
-        Widgets.GlowButton reload = new Widgets.GlowButton("Aktualisieren", Widgets.Style.DARK);
+        Widgets.GlowButton open = new Widgets.GlowButton(I18n.t("Ordner öffnen"), Widgets.Style.DARK);
+        Widgets.GlowButton reload = new Widgets.GlowButton(I18n.t("Aktualisieren"), Widgets.Style.DARK);
         open.addActionListener(e -> {
             Instance cur = AppState.current();
             if (cur != null) Widgets.openFolder(this, cur.screenshotsDir());
         });
         reload.addActionListener(e -> reload());
-        add(header("Screenshots", "Aufgenommen mit F2 im Spiel – Doppelklick zum Öffnen", reload, open), BorderLayout.NORTH);
+        add(header("Screenshots", I18n.t("Aufgenommen mit F2 im Spiel – Doppelklick zum Öffnen"), reload, open), BorderLayout.NORTH);
 
         list.setLayoutOrientation(JList.HORIZONTAL_WRAP);
         list.setVisibleRowCount(-1);
@@ -82,12 +83,12 @@ public class ScreenshotsPage extends Page {
         model.clear();
         Instance cur = AppState.current();
         if (cur == null) {
-            status.setText("Kein Profil ausgewählt.");
+            status.setText(I18n.t("Kein Profil ausgewählt."));
             return;
         }
         Path dir = cur.screenshotsDir();
         if (!Files.isDirectory(dir)) {
-            status.setText("Noch keine Screenshots in \"" + cur.name + "\".");
+            status.setText(I18n.t("Noch keine Screenshots in \"") + cur.name + "\".");
             return;
         }
         try (Stream<Path> s = Files.list(dir)) {
@@ -95,9 +96,9 @@ public class ScreenshotsPage extends Page {
                     .sorted(Comparator.comparingLong((Path p) -> p.toFile().lastModified()).reversed())
                     .limit(200).toList();
             files.forEach(model::addElement);
-            status.setText(files.size() + " Screenshots in \"" + cur.name + "\"");
+            status.setText(files.size() + I18n.t(" Screenshots in \"") + cur.name + "\"");
         } catch (IOException ex) {
-            status.setText("Fehler: " + ex.getMessage());
+            status.setText(I18n.t("Fehler: ") + ex.getMessage());
         }
     }
 

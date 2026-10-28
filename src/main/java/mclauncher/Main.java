@@ -26,6 +26,9 @@ public class Main {
     public static void main(String[] args) {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> reportCrash(e));
 
+        Store.load();
+        I18n.init();   // Sprache festlegen, bevor die Oberfläche entsteht
+
         FlatDarkLaf.setup();
         Theme.install();
         UIManager.put("Button.arc", 12);
@@ -37,13 +40,22 @@ public class Main {
         UIManager.put("TabbedPane.showTabSeparators", true);
 
         if (!acquireLock()) {
-            JOptionPane.showMessageDialog(null, "JLauncher läuft bereits.\nBitte nur ein Fenster gleichzeitig verwenden.",
+            JOptionPane.showMessageDialog(null, I18n.t("JLauncher läuft bereits.\nBitte nur ein Fenster gleichzeitig verwenden."),
                     "JLauncher", JOptionPane.INFORMATION_MESSAGE);
             System.exit(0);
         }
 
-        Store.load();
         SwingUtilities.invokeLater(() -> new MainWindow().setVisible(true));
+    }
+
+    /** Gibt die Sperrdatei frei (vor einem Neustart). */
+    public static void releaseLock() {
+        try {
+            if (lock != null) {
+                lock.release();
+                lock.channel().close();
+            }
+        } catch (IOException ignored) { }
     }
 
     /** Verhindert, dass zwei Launcher gleichzeitig die Konfiguration überschreiben. */
@@ -75,9 +87,9 @@ public class Main {
         if (CRASH_DIALOG_OPEN.compareAndSet(false, true)) {
             SwingUtilities.invokeLater(() -> {
                 JOptionPane.showMessageDialog(null,
-                        "Ein unerwarteter Fehler ist aufgetreten:\n" + e + "\n\nDetails stehen in:\n"
+                        I18n.t("Ein unerwarteter Fehler ist aufgetreten:\n") + e + I18n.t("\n\nDetails stehen in:\n")
                                 + AppPaths.ROOT.resolve("launcher-crash.log"),
-                        "JLauncher – Fehler", JOptionPane.ERROR_MESSAGE);
+                        I18n.t("JLauncher – Fehler"), JOptionPane.ERROR_MESSAGE);
                 CRASH_DIALOG_OPEN.set(false);
             });
         }

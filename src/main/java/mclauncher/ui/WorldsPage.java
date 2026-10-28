@@ -1,5 +1,6 @@
 package mclauncher.ui;
 
+import mclauncher.I18n;
 import mclauncher.Downloads;
 import mclauncher.GameRunner;
 import mclauncher.Instance;
@@ -46,15 +47,15 @@ public class WorldsPage extends Page {
 
     private JComponent worldsCard() {
         Widgets.RoundPanel card = new Widgets.RoundPanel(new BorderLayout(0, 10));
-        card.add(Widgets.title("Welten", 18f), BorderLayout.NORTH);
+        card.add(Widgets.title(I18n.t("Welten"), 18f), BorderLayout.NORTH);
 
         worldList.setCellRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> l, Object v, int i, boolean s, boolean f) {
                 super.getListCellRendererComponent(l, v, i, s, f);
                 Worlds.World w = (Worlds.World) v;
-                setText("<html><b>" + esc(w.name()) + "</b><br><span style='color:gray'>" + fmtSize(w.size()) + "  ·  zuletzt "
-                        + new SimpleDateFormat("dd.MM.yyyy HH:mm").format(new Date(w.modified())) + "</span></html>");
+                setText("<html><b>" + esc(w.name()) + "</b><br><span style='color:gray'>" + fmtSize(w.size()) + I18n.t("  ·  zuletzt ")
+                        + new SimpleDateFormat(I18n.t("dd.MM.yyyy HH:mm")).format(new Date(w.modified())) + "</span></html>");
                 setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
                 return this;
             }
@@ -63,9 +64,9 @@ public class WorldsPage extends Page {
         sp.setBorder(BorderFactory.createLineBorder(Theme.BORDER));
         card.add(sp, BorderLayout.CENTER);
 
-        Widgets.GlowButton backup = new Widgets.GlowButton("Sichern", Widgets.Style.PRIMARY);
-        Widgets.GlowButton del = new Widgets.GlowButton("Löschen", Widgets.Style.DANGER);
-        Widgets.GlowButton open = new Widgets.GlowButton("Ordner", Widgets.Style.DARK);
+        Widgets.GlowButton backup = new Widgets.GlowButton(I18n.t("Sichern"), Widgets.Style.PRIMARY);
+        Widgets.GlowButton del = new Widgets.GlowButton(I18n.t("Löschen"), Widgets.Style.DANGER);
+        Widgets.GlowButton open = new Widgets.GlowButton(I18n.t("Ordner"), Widgets.Style.DARK);
         backup.addActionListener(e -> backupSelected());
         del.addActionListener(e -> deleteSelected());
         open.addActionListener(e -> {
@@ -87,7 +88,7 @@ public class WorldsPage extends Page {
                 Path p = (Path) v;
                 setText("<html><b>" + esc(p.getFileName().toString().replace(".zip", "")) + "</b><br><span style='color:gray'>"
                         + fmtSize(p.toFile().length()) + "  ·  "
-                        + new SimpleDateFormat("dd.MM.yyyy HH:mm").format(new Date(p.toFile().lastModified())) + "</span></html>");
+                        + new SimpleDateFormat(I18n.t("dd.MM.yyyy HH:mm")).format(new Date(p.toFile().lastModified())) + "</span></html>");
                 setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
                 return this;
             }
@@ -96,9 +97,9 @@ public class WorldsPage extends Page {
         sp.setBorder(BorderFactory.createLineBorder(Theme.BORDER));
         card.add(sp, BorderLayout.CENTER);
 
-        Widgets.GlowButton restore = new Widgets.GlowButton("Wiederherstellen", Widgets.Style.PRIMARY);
-        Widgets.GlowButton del = new Widgets.GlowButton("Löschen", Widgets.Style.DANGER);
-        Widgets.GlowButton open = new Widgets.GlowButton("Ordner", Widgets.Style.DARK);
+        Widgets.GlowButton restore = new Widgets.GlowButton(I18n.t("Wiederherstellen"), Widgets.Style.PRIMARY);
+        Widgets.GlowButton del = new Widgets.GlowButton(I18n.t("Löschen"), Widgets.Style.DANGER);
+        Widgets.GlowButton open = new Widgets.GlowButton(I18n.t("Ordner"), Widgets.Style.DARK);
         restore.addActionListener(e -> restoreSelected());
         del.addActionListener(e -> deleteBackup());
         open.addActionListener(e -> {
@@ -121,8 +122,8 @@ public class WorldsPage extends Page {
     private void reload() {
         Instance cur = AppState.current();
         headerHolder.removeAll();
-        headerHolder.add(header("Welten", cur == null ? "Kein Profil ausgewählt" : "Profil: " + cur.name
-                + "  ·  Backups liegen außerhalb des Profils und bleiben auch nach dem Löschen des Profils erhalten"));
+        headerHolder.add(header(I18n.t("Welten"), cur == null ? I18n.t("Kein Profil ausgewählt") : I18n.t("Profil: ") + cur.name
+                + I18n.t("  ·  Backups liegen außerhalb des Profils und bleiben auch nach dem Löschen des Profils erhalten")));
         headerHolder.revalidate();
         headerHolder.repaint();
 
@@ -130,7 +131,7 @@ public class WorldsPage extends Page {
         backupModel.clear();
         if (cur == null) return;
         int id = ++loadId;
-        status.setText("Lade Welten …");
+        status.setText(I18n.t("Lade Welten …"));
         Util.async(() -> {
             try {
                 List<Worlds.World> worlds = Worlds.list(cur);
@@ -139,10 +140,10 @@ public class WorldsPage extends Page {
                     if (id != loadId) return;
                     worlds.forEach(worldModel::addElement);
                     backups.forEach(backupModel::addElement);
-                    status.setText(worlds.size() + " Welten, " + backups.size() + " Backups");
+                    status.setText(worlds.size() + I18n.t(" Welten, ") + backups.size() + I18n.t(" Backups"));
                 });
             } catch (IOException ex) {
-                SwingUtilities.invokeLater(() -> status.setText("Fehler: " + ex.getMessage()));
+                SwingUtilities.invokeLater(() -> status.setText(I18n.t("Fehler: ") + ex.getMessage()));
             }
         });
     }
@@ -151,7 +152,7 @@ public class WorldsPage extends Page {
 
     private boolean gameRunsOn(Instance inst) {
         if (GameRunner.state() != GameRunner.State.IDLE && GameRunner.running() == inst) {
-            JOptionPane.showMessageDialog(this, "Beende Minecraft zuerst. Während des Spielens können Welten nicht sicher gesichert oder verändert werden.");
+            JOptionPane.showMessageDialog(this, I18n.t("Beende Minecraft zuerst. Während des Spielens können Welten nicht sicher gesichert oder verändert werden."));
             return true;
         }
         return false;
@@ -161,10 +162,10 @@ public class WorldsPage extends Page {
         Instance cur = AppState.current();
         Worlds.World w = worldList.getSelectedValue();
         if (cur == null || w == null || gameRunsOn(cur)) return;
-        Downloads.start("Welt sichern: " + w.name(), p -> Worlds.backup(cur, w, p),
+        Downloads.start(I18n.t("Welt sichern: ") + w.name(), p -> Worlds.backup(cur, w, p),
                 err -> SwingUtilities.invokeLater(() -> {
                     reload();
-                    if (err != null) JOptionPane.showMessageDialog(this, err.getMessage(), "Sichern fehlgeschlagen", JOptionPane.ERROR_MESSAGE);
+                    if (err != null) JOptionPane.showMessageDialog(this, err.getMessage(), I18n.t("Sichern fehlgeschlagen"), JOptionPane.ERROR_MESSAGE);
                 }));
     }
 
@@ -172,10 +173,10 @@ public class WorldsPage extends Page {
         Instance cur = AppState.current();
         Path zip = backupList.getSelectedValue();
         if (cur == null || zip == null || gameRunsOn(cur)) return;
-        Downloads.start("Backup wiederherstellen: " + zip.getFileName(), p -> Worlds.restore(cur, zip, p),
+        Downloads.start(I18n.t("Backup wiederherstellen: ") + zip.getFileName(), p -> Worlds.restore(cur, zip, p),
                 err -> SwingUtilities.invokeLater(() -> {
                     reload();
-                    if (err != null) JOptionPane.showMessageDialog(this, err.getMessage(), "Wiederherstellen fehlgeschlagen", JOptionPane.ERROR_MESSAGE);
+                    if (err != null) JOptionPane.showMessageDialog(this, err.getMessage(), I18n.t("Wiederherstellen fehlgeschlagen"), JOptionPane.ERROR_MESSAGE);
                 }));
     }
 
@@ -184,14 +185,14 @@ public class WorldsPage extends Page {
         Worlds.World w = worldList.getSelectedValue();
         if (cur == null || w == null || gameRunsOn(cur)) return;
         int r = JOptionPane.showConfirmDialog(this,
-                "Welt \"" + w.name() + "\" unwiderruflich löschen?\nTipp: Sichere sie vorher als Backup.",
-                "Welt löschen", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                I18n.t("Welt \"") + w.name() + I18n.t("\" unwiderruflich löschen?\nTipp: Sichere sie vorher als Backup."),
+                I18n.t("Welt löschen"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (r != JOptionPane.YES_OPTION) return;
         Util.async(() -> {
             try {
                 Worlds.delete(cur, w);
             } catch (IOException ex) {
-                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, ex.getMessage(), "Fehler", JOptionPane.ERROR_MESSAGE));
+                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, ex.getMessage(), I18n.t("Fehler"), JOptionPane.ERROR_MESSAGE));
             }
             SwingUtilities.invokeLater(this::reload);
         });
@@ -200,12 +201,12 @@ public class WorldsPage extends Page {
     private void deleteBackup() {
         Path zip = backupList.getSelectedValue();
         if (zip == null) return;
-        if (JOptionPane.showConfirmDialog(this, "Backup \"" + zip.getFileName() + "\" löschen?", "Backup löschen",
+        if (JOptionPane.showConfirmDialog(this, I18n.t("Backup \"") + zip.getFileName() + I18n.t("\" löschen?"), I18n.t("Backup löschen"),
                 JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
         try {
             java.nio.file.Files.deleteIfExists(zip);
         } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Fehler", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, ex.getMessage(), I18n.t("Fehler"), JOptionPane.ERROR_MESSAGE);
         }
         reload();
     }

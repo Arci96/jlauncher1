@@ -80,7 +80,7 @@ public final class Worlds {
                 out.putNextEntry(ze);
                 Files.copy(f, out);
                 out.closeEntry();
-                if (++i % 25 == 0 || i == n) p.update("Sichere \"" + w.name() + "\" (" + i + "/" + n + ")", (double) i / n);
+                if (++i % 25 == 0 || i == n) p.update(I18n.t("Sichere \"") + w.name() + "\" (" + i + "/" + n + ")", (double) i / n);
             }
         } catch (IOException | RuntimeException e) {
             Files.deleteIfExists(zip);
@@ -101,7 +101,7 @@ public final class Worlds {
                 int i = n.indexOf('/');
                 if (i > 0) root = n.substring(0, i);
             }
-            if (root == null) throw new IOException("Das Backup ist leer oder beschädigt.");
+            if (root == null) throw new IOException(I18n.t("Das Backup ist leer oder beschädigt."));
 
             String name = root;
             int k = 0;
@@ -111,7 +111,7 @@ public final class Worlds {
             }
             Path dest = saves.resolve(name).normalize();
 
-            p.update("Stelle \"" + name + "\" wieder her …", -1);
+            p.update(I18n.t("Stelle \"") + name + I18n.t("\" wieder her …"), -1);
             en = zf.entries();
             try {
                 while (en.hasMoreElements()) {
@@ -136,7 +136,7 @@ public final class Worlds {
     public static void delete(Instance inst, World w) throws IOException {
         Path saves = savesDir(inst).toAbsolutePath().normalize();
         Path d = w.dir().toAbsolutePath().normalize();
-        if (!d.startsWith(saves) || d.equals(saves)) throw new IOException("Unzulässiger Pfad.");
+        if (!d.startsWith(saves) || d.equals(saves)) throw new IOException(I18n.t("Unzulässiger Pfad."));
         Util.deleteRecursive(d);
     }
 }

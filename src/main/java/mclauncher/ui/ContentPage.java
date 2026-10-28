@@ -1,5 +1,6 @@
 package mclauncher.ui;
 
+import mclauncher.I18n;
 import mclauncher.ContentType;
 import mclauncher.Downloads;
 import mclauncher.Instance;
@@ -44,12 +45,12 @@ public class ContentPage extends Page {
         Instance cur = AppState.current();
         shown = cur;
 
-        Widgets.GlowButton open = new Widgets.GlowButton("Ordner öffnen", Widgets.Style.DARK);
+        Widgets.GlowButton open = new Widgets.GlowButton(I18n.t("Ordner öffnen"), Widgets.Style.DARK);
         open.addActionListener(e -> { if (cur != null) Widgets.openFolder(this, cur.contentDir(type)); });
-        add(header(type.label, cur == null ? "Kein Profil ausgewählt" : "Profil: " + cur.name + "  ·  " + cur.label(), open), BorderLayout.NORTH);
+        add(header(type.label, cur == null ? I18n.t("Kein Profil ausgewählt") : I18n.t("Profil: ") + cur.name + "  ·  " + cur.label(), open), BorderLayout.NORTH);
 
         if (cur == null) {
-            JLabel l = Widgets.muted("Erstelle zuerst ein Profil.");
+            JLabel l = Widgets.muted(I18n.t("Erstelle zuerst ein Profil."));
             l.setHorizontalAlignment(SwingConstants.CENTER);
             add(l, BorderLayout.CENTER);
         } else {
@@ -68,7 +69,7 @@ public class ContentPage extends Page {
         Widgets.RoundPanel card = new Widgets.RoundPanel(new BorderLayout(0, 10));
         JPanel head = new JPanel(new BorderLayout());
         head.setOpaque(false);
-        head.add(Widgets.title("Installiert", 18f), BorderLayout.WEST);
+        head.add(Widgets.title(I18n.t("Installiert"), 18f), BorderLayout.WEST);
         countLabel.setForeground(Theme.MUTED);
         head.add(countLabel, BorderLayout.EAST);
         card.add(head, BorderLayout.NORTH);
@@ -80,7 +81,7 @@ public class ContentPage extends Page {
                 Path p = (Path) v;
                 String n = p.getFileName().toString();
                 boolean off = Modrinth.isDisabled(p);
-                setText(off ? n.substring(0, n.length() - ".disabled".length()) + "   (deaktiviert)" : n);
+                setText(off ? n.substring(0, n.length() - ".disabled".length()) + I18n.t("   (deaktiviert)") : n);
                 if (off && !s) setForeground(Theme.MUTED);
                 setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
                 return this;
@@ -90,10 +91,10 @@ public class ContentPage extends Page {
         sp.setBorder(BorderFactory.createLineBorder(Theme.BORDER));
         card.add(sp, BorderLayout.CENTER);
 
-        Widgets.GlowButton toggle = new Widgets.GlowButton("Ein / Aus", Widgets.Style.DARK);
-        Widgets.GlowButton del = new Widgets.GlowButton("Entfernen", Widgets.Style.DANGER);
-        Widgets.GlowButton reload = new Widgets.GlowButton("Aktualisieren", Widgets.Style.DARK);
-        Widgets.GlowButton updates = new Widgets.GlowButton("Mod-Updates suchen", Widgets.Style.DARK);
+        Widgets.GlowButton toggle = new Widgets.GlowButton(I18n.t("Ein / Aus"), Widgets.Style.DARK);
+        Widgets.GlowButton del = new Widgets.GlowButton(I18n.t("Entfernen"), Widgets.Style.DANGER);
+        Widgets.GlowButton reload = new Widgets.GlowButton(I18n.t("Aktualisieren"), Widgets.Style.DARK);
+        Widgets.GlowButton updates = new Widgets.GlowButton(I18n.t("Mod-Updates suchen"), Widgets.Style.DARK);
         updates.addActionListener(e -> checkUpdates(cur));
         toggle.addActionListener(e -> {
             Path p = list.getSelectedValue();
@@ -104,7 +105,7 @@ public class ContentPage extends Page {
         del.addActionListener(e -> {
             Path p = list.getSelectedValue();
             if (p == null) return;
-            if (JOptionPane.showConfirmDialog(this, p.getFileName() + " wirklich entfernen?", "Entfernen",
+            if (JOptionPane.showConfirmDialog(this, p.getFileName() + I18n.t(" wirklich entfernen?"), I18n.t("Entfernen"),
                     JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
             try { Modrinth.delete(p); } catch (IOException ex) { error(ex); }
             refreshInstalled();
@@ -125,13 +126,13 @@ public class ContentPage extends Page {
         JPanel head = new JPanel();
         head.setOpaque(false);
         head.setLayout(new BoxLayout(head, BoxLayout.Y_AXIS));
-        JLabel t = Widgets.title("Suchen und installieren", 18f);
+        JLabel t = Widgets.title(I18n.t("Suchen und installieren"), 18f);
         t.setAlignmentX(LEFT_ALIGNMENT);
         head.add(t);
         String note = switch (type) {
-            case SHADER -> "Shader brauchen Iris (Fabric/Quilt) oder OptiFine. Aktivierung im Spiel unter Videoeinstellungen.";
-            case RESOURCEPACK -> "Aktiviere Ressourcenpakete im Spiel unter Optionen \u2192 Ressourcenpakete.";
-            default -> "Quelle: Modrinth oder CurseForge. Pflicht-Abhängigkeiten (z. B. Fabric API) werden automatisch mitinstalliert.";
+            case SHADER -> I18n.t("Shader brauchen Iris (Fabric/Quilt) oder OptiFine. Aktivierung im Spiel unter Videoeinstellungen.");
+            case RESOURCEPACK -> I18n.t("Aktiviere Ressourcenpakete im Spiel unter Optionen \u2192 Ressourcenpakete.");
+            default -> I18n.t("Quelle: Modrinth oder CurseForge. Pflicht-Abhängigkeiten (z. B. Fabric API) werden automatisch mitinstalliert.");
         };
         JLabel n = Widgets.muted("<html>" + note + "</html>");
         n.setAlignmentX(LEFT_ALIGNMENT);
@@ -149,20 +150,20 @@ public class ContentPage extends Page {
         } catch (IOException ex) {
             error(ex);
         }
-        countLabel.setText(model.size() + " Einträge");
+        countLabel.setText(model.size() + I18n.t(" Einträge"));
     }
 
     /** Prüft bei Modrinth auf neuere Versionen der installierten Mods und aktualisiert sie nach Rückfrage. */
     private void checkUpdates(Instance cur) {
         if (cur == null) return;
-        countLabel.setText("Suche Updates …");
+        countLabel.setText(I18n.t("Suche Updates …"));
         Util.async(() -> {
             try {
                 List<ModUpdates.Update> ups = ModUpdates.check(cur);
                 SwingUtilities.invokeLater(() -> {
                     refreshInstalled();
                     if (ups.isEmpty()) {
-                        JOptionPane.showMessageDialog(this, "Keine Updates gefunden.\n(Geprüft werden nur Mods, die auf Modrinth gefunden werden.)");
+                        JOptionPane.showMessageDialog(this, I18n.t("Keine Updates gefunden.\n(Geprüft werden nur Mods, die auf Modrinth gefunden werden.)"));
                         return;
                     }
                     StringBuilder sb = new StringBuilder();
@@ -172,9 +173,9 @@ public class ContentPage extends Page {
                     JTextArea area = new JTextArea(sb.toString(), 12, 48);
                     area.setEditable(false);
                     int r = JOptionPane.showConfirmDialog(this, new JScrollPane(area),
-                            ups.size() + " Update(s) verfügbar – jetzt installieren?", JOptionPane.YES_NO_OPTION);
+                            ups.size() + I18n.t(" Update(s) verfügbar – jetzt installieren?"), JOptionPane.YES_NO_OPTION);
                     if (r != JOptionPane.YES_OPTION) return;
-                    Downloads.start(ups.size() + " Mods aktualisieren (" + cur.name + ")",
+                    Downloads.start(ups.size() + I18n.t(" Mods aktualisieren (") + cur.name + ")",
                             p -> ModUpdates.apply(cur, ups, msg -> p.update(msg, -1)),
                             err -> SwingUtilities.invokeLater(() -> {
                                 refreshInstalled();
@@ -191,6 +192,6 @@ public class ContentPage extends Page {
     }
 
     private void error(Exception ex) {
-        JOptionPane.showMessageDialog(this, ex.getMessage(), "Fehler", JOptionPane.ERROR_MESSAGE);
+        JOptionPane.showMessageDialog(this, ex.getMessage(), I18n.t("Fehler"), JOptionPane.ERROR_MESSAGE);
     }
 }

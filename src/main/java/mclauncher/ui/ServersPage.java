@@ -1,5 +1,6 @@
 package mclauncher.ui;
 
+import mclauncher.I18n;
 import mclauncher.GameRunner;
 import mclauncher.Instance;
 import mclauncher.ServerPing;
@@ -14,11 +15,11 @@ public class ServersPage extends Page {
 
     public ServersPage(MainWindow win) {
         super(win);
-        Widgets.GlowButton add = new Widgets.GlowButton("+  Server hinzufügen", Widgets.Style.PRIMARY);
-        Widgets.GlowButton refresh = new Widgets.GlowButton("Aktualisieren", Widgets.Style.DARK);
+        Widgets.GlowButton add = new Widgets.GlowButton(I18n.t("+  Server hinzufügen"), Widgets.Style.PRIMARY);
+        Widgets.GlowButton refresh = new Widgets.GlowButton(I18n.t("Aktualisieren"), Widgets.Style.DARK);
         add.addActionListener(e -> addServer());
         refresh.addActionListener(e -> refreshStatus());
-        add(header("Server", "Speichere Server und tritt mit dem aktuellen Profil direkt bei", refresh, add), BorderLayout.NORTH);
+        add(header(I18n.t("Server"), I18n.t("Speichere Server und tritt mit dem aktuellen Profil direkt bei"), refresh, add), BorderLayout.NORTH);
         add(Widgets.scroll(list), BorderLayout.CENTER);
         rebuild();
     }
@@ -38,13 +39,13 @@ public class ServersPage extends Page {
     private void addServer() {
         JTextField name = new JTextField(20);
         JTextField addr = new JTextField(20);
-        addr.putClientProperty("JTextField.placeholderText", "z. B. mc.beispiel.de oder mc.beispiel.de:25566");
+        addr.putClientProperty("JTextField.placeholderText", I18n.t("z. B. mc.beispiel.de oder mc.beispiel.de:25566"));
         JPanel p = new JPanel(new GridLayout(4, 1, 0, 4));
         p.add(new JLabel("Name"));
         p.add(name);
-        p.add(new JLabel("Adresse"));
+        p.add(new JLabel(I18n.t("Adresse")));
         p.add(addr);
-        if (JOptionPane.showConfirmDialog(this, p, "Server hinzufügen", JOptionPane.OK_CANCEL_OPTION,
+        if (JOptionPane.showConfirmDialog(this, p, I18n.t("Server hinzufügen"), JOptionPane.OK_CANCEL_OPTION,
                 JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) return;
         String a = addr.getText().trim();
         if (a.isEmpty()) return;
@@ -58,7 +59,7 @@ public class ServersPage extends Page {
     private void rebuild() {
         list.removeAll();
         if (Store.data.servers.isEmpty()) {
-            JLabel l = Widgets.muted("Noch keine Server. Klicke oben auf \"Server hinzufügen\".");
+            JLabel l = Widgets.muted(I18n.t("Noch keine Server. Klicke oben auf \"Server hinzufügen\"."));
             l.setAlignmentX(LEFT_ALIGNMENT);
             list.add(l);
         }
@@ -97,18 +98,18 @@ public class ServersPage extends Page {
         mid.add(Box.createVerticalGlue());
         c.add(mid, BorderLayout.CENTER);
 
-        JLabel players = new JLabel(r == null ? "prüfe …" : r.online() ? r.players() + " / " + r.max() + "  ·  " + r.pingMs() + " ms" : "offline");
+        JLabel players = new JLabel(r == null ? I18n.t("prüfe …") : r.online() ? r.players() + " / " + r.max() + "  ·  " + r.pingMs() + " ms" : "offline");
         players.setForeground(r != null && r.online() ? Theme.TEXT : Theme.MUTED);
         Widgets.SignalBars bars = new Widgets.SignalBars();
         bars.setLevel(r == null ? 0 : r.signalLevel());
-        Widgets.GlowButton join = new Widgets.GlowButton("Beitreten", Widgets.Style.PRIMARY);
+        Widgets.GlowButton join = new Widgets.GlowButton(I18n.t("Beitreten"), Widgets.Style.PRIMARY);
         Widgets.GlowButton del = new Widgets.GlowButton("\u2715", Widgets.Style.DARK);
         join.addActionListener(e -> {
             Instance cur = AppState.current();
             if (cur == null) {
-                JOptionPane.showMessageDialog(this, "Erstelle zuerst ein Profil.");
+                JOptionPane.showMessageDialog(this, I18n.t("Erstelle zuerst ein Profil."));
             } else if (GameRunner.state() != GameRunner.State.IDLE) {
-                JOptionPane.showMessageDialog(this, "Minecraft läuft bereits oder wird gerade vorbereitet.");
+                JOptionPane.showMessageDialog(this, I18n.t("Minecraft läuft bereits oder wird gerade vorbereitet."));
             } else {
                 win.play(cur, s.address);
                 win.navigate("home");

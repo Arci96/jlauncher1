@@ -13,7 +13,7 @@ public final class Downloads {
 
     public static final class Task {
         public final String title;
-        public volatile String message = "Wird gestartet …";
+        public volatile String message = I18n.t("Wird gestartet …");
         public volatile double fraction = -1;   // < 0 = unbestimmt
         public volatile State state = State.RUNNING;
         public volatile boolean cancelRequested;
@@ -99,19 +99,19 @@ public final class Downloads {
             Throwable err = null;
             try {
                 body.run((msg, f) -> {
-                    if (task.cancelRequested) throw new CancellationException("Abgebrochen");
+                    if (task.cancelRequested) throw new CancellationException(I18n.t("Abgebrochen"));
                     task.message = msg;
                     task.fraction = f;
                     fire();
                 });
                 task.state = State.DONE;
                 task.fraction = 1;
-                task.message = "Abgeschlossen";
+                task.message = I18n.t("Abgeschlossen");
             } catch (Throwable e) {
                 if (task.cancelRequested || e instanceof CancellationException) {
                     task.state = State.CANCELLED;
-                    task.message = "Abgebrochen";
-                    err = new CancellationException("Abgebrochen");
+                    task.message = I18n.t("Abgebrochen");
+                    err = new CancellationException(I18n.t("Abgebrochen"));
                 } else {
                     task.state = State.FAILED;
                     task.message = e.getMessage() != null ? e.getMessage() : e.toString();

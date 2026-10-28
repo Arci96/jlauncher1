@@ -1,5 +1,6 @@
 package mclauncher.ui;
 
+import mclauncher.I18n;
 import javax.swing.*;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
@@ -263,10 +264,17 @@ public final class Widgets {
     public static class Avatar extends JComponent {
         private String name = "?";
         private final int size;
+        private java.awt.image.BufferedImage head;
 
         public Avatar(int size) {
             this.size = size;
             setPreferredSize(new Dimension(size, size));
+        }
+
+        /** Skin-Kopf anzeigen (null = Buchstabe). */
+        public void setHead(java.awt.image.BufferedImage h) {
+            head = h;
+            repaint();
         }
 
         public void setName(String n) {
@@ -278,6 +286,13 @@ public final class Widgets {
         protected void paintComponent(Graphics g0) {
             Graphics2D g = (Graphics2D) g0.create();
             aa(g);
+            if (head != null) {
+                g.setClip(new RoundRectangle2D.Float(0, 0, size, size, size / 4f, size / 4f));
+                g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+                g.drawImage(head, 0, 0, size, size, null);
+                g.dispose();
+                return;
+            }
             float hue = (Math.abs(name.hashCode()) % 360) / 360f;
             Color c = Color.getHSBColor(hue, 0.45f, 0.65f);
             g.setPaint(new GradientPaint(0, 0, c.brighter(), 0, size, c.darker()));
@@ -312,8 +327,23 @@ public final class Widgets {
             java.nio.file.Files.createDirectories(dir);
             if (Desktop.isDesktopSupported()) Desktop.getDesktop().open(dir.toFile());
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(parent, ex.getMessage(), "Fehler", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(parent, ex.getMessage(), I18n.t("Fehler"), JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    /** Das Logo in mehreren Größen (Fenster-Icon, Taskleiste). */
+    public static java.util.List<Image> appIcons() {
+        java.util.List<Image> out = new java.util.ArrayList<>();
+        for (int size : new int[]{16, 32, 48, 64, 128, 256}) {
+            java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            LogoIcon icon = new LogoIcon();
+            icon.setSize(size, size);
+            Graphics2D g = img.createGraphics();
+            icon.paint(g);
+            g.dispose();
+            out.add(img);
+        }
+        return out;
     }
 
     // ------------------------------------------------------------------ RAM-Regler

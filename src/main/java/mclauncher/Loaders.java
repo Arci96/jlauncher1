@@ -89,8 +89,8 @@ public final class Loaders {
     public static String install(Instance inst, String javaExe, Progress p, Consumer<String> log) throws IOException {
         Type t = inst.type();
         String mc = inst.mcVersion, lv = inst.loaderVersion;
-        if (lv == null || lv.isBlank()) throw new IOException("Keine Loader-Version gewählt.");
-        p.update(t.label + " " + lv + " wird installiert …", -1);
+        if (lv == null || lv.isBlank()) throw new IOException(I18n.t("Keine Loader-Version gewählt."));
+        p.update(t.label + " " + lv + I18n.t(" wird installiert …"), -1);
 
         if (t == Type.FABRIC || t == Type.QUILT) {
             String base = t == Type.FABRIC ? FABRIC_META : QUILT_META;
@@ -117,7 +117,7 @@ public final class Loaders {
             expected = "neoforge-" + lv;
         }
         Path jar = AppPaths.CACHE.resolve("installers").resolve(t.name().toLowerCase() + "-" + mc + "-" + lv + "-installer.jar");
-        log.accept("Lade Installer: " + url);
+        log.accept(I18n.t("Lade Installer: ") + url);
         Util.download(url, jar, null, false);
 
         // Der Installer erwartet ein launcher_profiles.json im Zielordner.
@@ -127,7 +127,7 @@ public final class Loaders {
         Set<String> before = versionDirs();
         List<String> cmd = List.of(javaExe, "-Djava.awt.headless=true", "-jar", jar.toString(),
                 "--installClient", AppPaths.ROOT.toString());
-        log.accept("Starte Installer (das kann einige Minuten dauern) …");
+        log.accept(I18n.t("Starte Installer (das kann einige Minuten dauern) …"));
         Process proc = new ProcessBuilder(cmd).directory(AppPaths.ROOT.toFile()).redirectErrorStream(true).start();
         try (BufferedReader r = new BufferedReader(new InputStreamReader(proc.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
@@ -139,15 +139,15 @@ public final class Loaders {
         } catch (InterruptedException e) {
             proc.destroy();
             Thread.currentThread().interrupt();
-            throw new IOException("Abgebrochen", e);
+            throw new IOException(I18n.t("Abgebrochen"), e);
         }
-        if (code != 0) throw new IOException("Der " + t.label + "-Installer ist mit Code " + code + " fehlgeschlagen (siehe Konsole).");
+        if (code != 0) throw new IOException(I18n.t("Der ") + t.label + I18n.t("-Installer ist mit Code ") + code + I18n.t(" fehlgeschlagen (siehe Konsole)."));
 
         if (Files.exists(Versions.versionJson(expected))) return expected;
         Set<String> created = versionDirs();
         created.removeAll(before);
         if (created.size() == 1) return created.iterator().next();
-        throw new IOException("Konnte die installierte Version nicht finden (erwartet: " + expected + ").");
+        throw new IOException(I18n.t("Konnte die installierte Version nicht finden (erwartet: ") + expected + ").");
     }
 
     private static Set<String> versionDirs() throws IOException {

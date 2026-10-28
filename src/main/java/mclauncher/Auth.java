@@ -41,9 +41,9 @@ public final class Auth {
     // ------------------------------------------------------------------ Microsoft: Device Code
 
     public static DeviceCode startDeviceFlow(String clientId) throws IOException {
-        if (clientId == null || clientId.isBlank()) throw new IOException("Bitte zuerst eine Azure-Client-ID eintragen.");
+        if (clientId == null || clientId.isBlank()) throw new IOException(I18n.t("Bitte zuerst eine Azure-Client-ID eintragen."));
         Util.Resp r = Util.postForm(TENANT + "/devicecode", Map.of("client_id", clientId, "scope", SCOPE));
-        if (!r.ok()) throw new IOException("Device-Code-Anfrage fehlgeschlagen: " + r.body());
+        if (!r.ok()) throw new IOException(I18n.t("Device-Code-Anfrage fehlgeschlagen: ") + r.body());
         JsonObject o = r.json();
         return new DeviceCode(o.get("device_code").getAsString(), o.get("user_code").getAsString(),
                 o.get("verification_uri").getAsString(), o.get("interval").getAsInt(), o.get("expires_in").getAsInt());
@@ -54,7 +54,7 @@ public final class Auth {
         long deadline = System.currentTimeMillis() + dc.expiresIn() * 1000L;
         int interval = Math.max(dc.interval(), 3);
         while (System.currentTimeMillis() < deadline) {
-            if (cancelled.getAsBoolean()) throw new IOException("Anmeldung abgebrochen.");
+            if (cancelled.getAsBoolean()) throw new IOException(I18n.t("Anmeldung abgebrochen."));
             sleep(interval * 1000L);
             Util.Resp r = Util.postForm(TENANT + "/token", Map.of(
                     "grant_type", "urn:ietf:params:oauth:grant-type:device_code",
@@ -62,30 +62,85 @@ public final class Auth {
                     "device_code", dc.deviceCode()));
             JsonObject o = r.json();
             if (r.ok()) {
-                Store.data.config.msRefreshToken = o.get("refresh_token").getAsString();
+                saveToken(o.get("refresh_token").getAsString());
                 return minecraftLogin(o.get("access_token").getAsString());
             }
             String err = Util.str(o, "error");
             if ("authorization_pending".equals(err)) continue;
             if ("slow_down".equals(err)) { interval += 5; continue; }
-            throw new IOException("Microsoft-Anmeldung fehlgeschlagen: " + Util.str(o, "error_description"));
+            throw new IOException(I18n.t("Microsoft-Anmeldung fehlgeschlagen: ") + Util.str(o, "error_description"));
         }
-        throw new IOException("Der Code ist abgelaufen. Bitte erneut versuchen.");
+        throw new IOException(I18n.t("Der Code ist abgelaufen. Bitte erneut versuchen."));
+    }
+
+    // ------------------------------------------------------------------ Token-Speicherung
+
+    private static final String TOKEN_KEY = "ms-refresh-token";
+
+    /** Speichert das Refresh-Token im Schlüsselbund des Systems; nur wenn das nicht geht, in launcher.json. */
+    public static void saveToken(String token) {
+        Store.Config c = Store.data.config;
+        if (SecretStore.put(TOKEN_KEY, token)) {
+            c.msRefreshToken = "";
+            c.msTokenSecure = true;
+        } else {
+            c.msRefreshToken = token;
+            c.msTokenSecure = false;
+        }
+    }
+
+    private static String loadToken() {
+        Store.Config c = Store.data.config;
+        if (c.msRefreshToken != null && !c.msRefreshToken.isBlank()) return c.msRefreshToken;   // Altbestand oder Ersatz
+        return c.msTokenSecure ? SecretStore.get(TOKEN_KEY) : null;
+    }
+
+    /** Ob ein Microsoft-Konto angemeldet ist (ohne den Schlüsselbund zu befragen). */
+    public static boolean signedIn() {
+        Store.Config c = Store.data.config;
+        return c.msTokenSecure || (c.msRefreshToken != null && !c.msRefreshToken.isBlank());
+    }
+
+    public static void signOut() {
+        Store.Config c = Store.data.config;
+        SecretStore.delete(TOKEN_KEY);
+        c.msRefreshToken = "";
+        c.msTokenSecure = false;
+        c.msName = "";
+        c.msUuid = "";
+        c.msSkinUrl = "";
+        if ("microsoft".equals(c.accountType)) c.accountType = "offline";
+        Store.save();
+    }
+
+    /** Verschiebt ein altes Klartext-Token aus launcher.json in den Schlüsselbund (falls verfügbar). */
+    public static void migrateLegacyToken() {
+        Store.Config c = Store.data.config;
+        String t = c.msRefreshToken;
+        if (t == null || t.isBlank() || !SecretStore.available()) return;
+        if (SecretStore.put(TOKEN_KEY, t)) {
+            c.msRefreshToken = "";
+            c.msTokenSecure = true;
+            Store.save();
+        }
     }
 
     private static Account refreshMicrosoft() throws IOException {
         Store.Config c = Store.data.config;
-        if (c.msRefreshToken == null || c.msRefreshToken.isBlank()) {
-            throw new IOException("Nicht bei Microsoft angemeldet. Bitte unter 'Konto' anmelden.");
+        String token = loadToken();
+        if (token == null || token.isBlank()) {
+            throw new IOException(c.msTokenSecure
+                    ? I18n.t("Das gespeicherte Token konnte nicht aus dem Schlüsselbund gelesen werden. Bitte neu anmelden.")
+                    : I18n.t("Nicht bei Microsoft angemeldet. Bitte unter 'Konto' anmelden."));
         }
         Util.Resp r = Util.postForm(TENANT + "/token", Map.of(
                 "grant_type", "refresh_token",
                 "client_id", c.msClientId,
-                "refresh_token", c.msRefreshToken,
+                "refresh_token", token,
                 "scope", SCOPE));
-        if (!r.ok()) throw new IOException("Token-Erneuerung fehlgeschlagen - bitte neu anmelden. " + r.body());
+        if (!r.ok()) throw new IOException(I18n.t("Token-Erneuerung fehlgeschlagen - bitte neu anmelden. ") + r.body());
         JsonObject o = r.json();
-        if (o.has("refresh_token")) c.msRefreshToken = o.get("refresh_token").getAsString();
+        if (o.has("refresh_token")) saveToken(o.get("refresh_token").getAsString());
         Account acc = minecraftLogin(o.get("access_token").getAsString());
         Store.save();
         return acc;
@@ -131,31 +186,40 @@ public final class Auth {
         try {
             body = Util.get("https://api.minecraftservices.com/minecraft/profile", Map.of("Authorization", "Bearer " + mcToken));
         } catch (IOException e) {
-            throw new IOException("Kein Minecraft-Java-Profil gefunden. Besitzt das Konto das Spiel? (" + e.getMessage() + ")");
+            throw new IOException(I18n.t("Kein Minecraft-Java-Profil gefunden. Besitzt das Konto das Spiel? (") + e.getMessage() + ")");
         }
         JsonObject profile = com.google.gson.JsonParser.parseString(body).getAsJsonObject();
         String id = profile.get("id").getAsString();
         String name = profile.get("name").getAsString();
         String uuid = id.replaceFirst("(\\p{XDigit}{8})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}+)", "$1-$2-$3-$4-$5");
 
+        // Aktiven Skin merken (für die Anzeige in der Kontokarte)
+        String skinUrl = "";
+        if (profile.has("skins")) {
+            for (com.google.gson.JsonElement s : profile.getAsJsonArray("skins")) {
+                com.google.gson.JsonObject so = s.getAsJsonObject();
+                if ("ACTIVE".equals(Util.str(so, "state")) && Util.str(so, "url") != null) skinUrl = Util.str(so, "url");
+            }
+        }
+        Store.data.config.msSkinUrl = skinUrl;
         Store.data.config.msName = name;
         Store.data.config.msUuid = uuid;
         return new Account(name, uuid, mcToken, "msa");
     }
 
     private static JsonObject checked(Util.Resp r, String what) throws IOException {
-        if (!r.ok()) throw new IOException(what + "-Anmeldung fehlgeschlagen: HTTP " + r.status() + " " + r.body());
+        if (!r.ok()) throw new IOException(what + I18n.t("-Anmeldung fehlgeschlagen: HTTP ") + r.status() + " " + r.body());
         return r.json();
     }
 
     private static String xstsError(Util.Resp r) {
         try {
             long code = r.json().get("XErr").getAsLong();
-            if (code == 2148916233L) return "Dieses Microsoft-Konto hat kein Xbox-Konto. Bitte zuerst auf xbox.com eines anlegen.";
-            if (code == 2148916238L) return "Kinderkonto: Ein Erwachsener muss das Konto zu einer Familie hinzufügen.";
-            if (code == 2148916235L) return "Xbox Live ist in deinem Land nicht verfügbar.";
+            if (code == 2148916233L) return I18n.t("Dieses Microsoft-Konto hat kein Xbox-Konto. Bitte zuerst auf xbox.com eines anlegen.");
+            if (code == 2148916238L) return I18n.t("Kinderkonto: Ein Erwachsener muss das Konto zu einer Familie hinzufügen.");
+            if (code == 2148916235L) return I18n.t("Xbox Live ist in deinem Land nicht verfügbar.");
         } catch (Exception ignored) { }
-        return "XSTS-Anmeldung fehlgeschlagen: " + r.body();
+        return I18n.t("XSTS-Anmeldung fehlgeschlagen: ") + r.body();
     }
 
     private static void sleep(long ms) throws IOException {
@@ -163,7 +227,7 @@ public final class Auth {
             Thread.sleep(ms);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("Abgebrochen", e);
+            throw new IOException(I18n.t("Abgebrochen"), e);
         }
     }
 }

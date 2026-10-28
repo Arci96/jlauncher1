@@ -114,7 +114,7 @@ public final class Util {
             return new Resp(resp.statusCode(), resp.body());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("Abgebrochen", e);
+            throw new IOException(I18n.t("Abgebrochen"), e);
         }
     }
 
@@ -128,7 +128,7 @@ public final class Util {
         Resp r = exec(b.build());
         if (!r.ok()) {
             String body = r.body() == null ? "" : r.body();
-            throw new IOException("HTTP " + r.status() + " bei " + url + (body.length() > 200 ? "" : ": " + body));
+            throw new IOException("HTTP " + r.status() + I18n.t(" bei ") + url + (body.length() > 200 ? "" : ": " + body));
         }
         return r.body();
     }
@@ -159,13 +159,13 @@ public final class Util {
             } catch (IOException e) {
                 last = e;
                 String m = e.getMessage() == null ? "" : e.getMessage();
-                if (Thread.currentThread().isInterrupted() || m.equals("Abgebrochen") || m.contains("HTTP 404")) throw e;
+                if (Thread.currentThread().isInterrupted() || m.equals(I18n.t("Abgebrochen")) || m.contains("HTTP 404")) throw e;
                 if (attempt < 3) {
                     try {
                         Thread.sleep(800L * attempt);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
-                        throw new IOException("Abgebrochen", ie);
+                        throw new IOException(I18n.t("Abgebrochen"), ie);
                     }
                 }
             }
@@ -192,7 +192,7 @@ public final class Util {
         try {
             HttpResponse<InputStream> r = HTTP.send(req(url).GET().build(), HttpResponse.BodyHandlers.ofInputStream());
             try (InputStream in = r.body(); OutputStream os = Files.newOutputStream(tmp)) {
-                if (r.statusCode() != 200) throw new IOException("HTTP " + r.statusCode() + " bei " + url);
+                if (r.statusCode() != 200) throw new IOException("HTTP " + r.statusCode() + I18n.t(" bei ") + url);
                 byte[] buf = new byte[65536];
                 int n;
                 while ((n = in.read(buf)) > 0) {
@@ -201,12 +201,12 @@ public final class Util {
                 }
             }
             if (sha1 != null && !sha1.equalsIgnoreCase(sha1(tmp))) {
-                throw new IOException("Prüfsumme stimmt nicht: " + url);
+                throw new IOException(I18n.t("Prüfsumme stimmt nicht: ") + url);
             }
             Files.move(tmp, dest, StandardCopyOption.REPLACE_EXISTING);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("Abgebrochen", e);
+            throw new IOException(I18n.t("Abgebrochen"), e);
         } finally {
             Files.deleteIfExists(tmp);
         }
@@ -236,11 +236,11 @@ public final class Util {
             for (Future<Void> f : futures) f.get();
         } catch (ExecutionException e) {
             Throwable c = e.getCause();
-            if (c instanceof CancellationException) throw new IOException("Abgebrochen");
+            if (c instanceof CancellationException) throw new IOException(I18n.t("Abgebrochen"));
             throw c instanceof IOException io ? io : new IOException(c);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("Abgebrochen", e);
+            throw new IOException(I18n.t("Abgebrochen"), e);
         } finally {
             ex.shutdownNow();
         }

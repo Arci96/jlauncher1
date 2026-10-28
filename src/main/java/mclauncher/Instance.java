@@ -6,7 +6,7 @@ import java.util.UUID;
 /** Ein Profil (Instanz): eigene Welten, Mods, Einstellungen. */
 public class Instance {
     public String id = UUID.randomUUID().toString().substring(0, 8);
-    public String name = "Neues Profil";
+    public String name = I18n.t("Neues Profil");
     public String mcVersion = "1.21.1";
     public String loader = "VANILLA";      // VANILLA, FABRIC, QUILT, FORGE, NEOFORGE
     public String loaderVersion = "";

@@ -16,13 +16,13 @@ public final class ProfileTools {
     public static Instance duplicate(Instance src, Util.Progress p) throws IOException {
         Instance copy = Util.GSON.fromJson(Util.GSON.toJson(src), Instance.class);
         copy.id = UUID.randomUUID().toString().substring(0, 8);
-        copy.name = src.name + " (Kopie)";
+        copy.name = src.name + I18n.t(" (Kopie)");
         copy.gameDirOverride = "";
         copy.lastPlayed = 0;
 
         Path from = src.dir().toAbsolutePath().normalize();
         Path to = copy.dir().toAbsolutePath().normalize();
-        if (to.startsWith(from)) throw new IOException("Der Zielordner liegt im Quellordner.");
+        if (to.startsWith(from)) throw new IOException(I18n.t("Der Zielordner liegt im Quellordner."));
 
         try {
             Files.createDirectories(to);
@@ -40,7 +40,7 @@ public final class ProfileTools {
                         Files.createDirectories(target.getParent());
                         Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING);
                     }
-                    if (++i % 20 == 0 || i == n) p.update("Kopiere Dateien (" + i + "/" + n + ")", (double) i / n);
+                    if (++i % 20 == 0 || i == n) p.update(I18n.t("Kopiere Dateien (") + i + "/" + n + ")", (double) i / n);
                 }
             }
         } catch (IOException | RuntimeException e) {

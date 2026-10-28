@@ -21,7 +21,7 @@ public final class Launcher {
         checkDiskSpace(gameDir);
 
         // 1. Vanilla
-        p.update("Minecraft " + inst.mcVersion + " wird geprüft …", -1);
+        p.update("Minecraft " + inst.mcVersion + I18n.t(" wird geprüft …"), -1);
         JsonObject vanilla = loadVanillaOrRepair(inst.mcVersion);
         int javaMajor = vanilla.has("javaVersion") ? vanilla.getAsJsonObject("javaVersion").get("majorVersion").getAsInt() : 8;
         String java = resolveJava(inst, javaMajor);
@@ -40,7 +40,7 @@ public final class Launcher {
         }
 
         // 3. Befehl bauen
-        p.update("Starte Minecraft …", -1);
+        p.update(I18n.t("Starte Minecraft …"), -1);
         JsonObject meta = Versions.loadMerged(versionId);
         Path natives = Versions.prepareNatives(meta, versionId);
 
@@ -49,9 +49,9 @@ public final class Launcher {
             int fps = Math.min(260, Math.max(10, inst.fpsLimit));
             try {
                 OptionsFile.set(gameDir, "maxFps", String.valueOf(fps));
-                log.accept("FPS-Limit: " + (fps >= 260 ? "unbegrenzt" : fps));
+                log.accept("FPS-Limit: " + (fps >= 260 ? I18n.t("unbegrenzt") : fps));
             } catch (IOException e) {
-                log.accept("Hinweis: FPS-Limit konnte nicht gesetzt werden: " + e.getMessage());
+                log.accept(I18n.t("Hinweis: FPS-Limit konnte nicht gesetzt werden: ") + e.getMessage());
             }
         }
 
@@ -60,7 +60,7 @@ public final class Launcher {
         int maxMb = inst.ramMax;
         if (maxMb > totalMb - 512) {
             maxMb = Math.max(1024, totalMb - 512);
-            log.accept("Hinweis: RAM-Maximum (" + inst.ramMax + " MB) übersteigt den verfügbaren Speicher, verwende " + maxMb + " MB.");
+            log.accept(I18n.t("Hinweis: RAM-Maximum (") + inst.ramMax + I18n.t(" MB) übersteigt den verfügbaren Speicher, verwende ") + maxMb + " MB.");
         }
         int minMb = Math.min(inst.ramMin, maxMb);
 
@@ -164,7 +164,7 @@ public final class Launcher {
             return;   // nicht prüfbar - nicht blockieren
         }
         if (free < 300L * 1024 * 1024) {
-            throw new IOException("Zu wenig freier Speicherplatz (" + free / (1024 * 1024) + " MB frei, mindestens 300 MB nötig).");
+            throw new IOException(I18n.t("Zu wenig freier Speicherplatz (") + free / (1024 * 1024) + I18n.t(" MB frei, mindestens 300 MB nötig)."));
         }
     }
 
@@ -191,7 +191,7 @@ public final class Launcher {
     }
 
     private static String checkedJava(String path) throws IOException {
-        if (!Files.exists(Path.of(path))) throw new IOException("Java-Datei nicht gefunden: " + path);
+        if (!Files.exists(Path.of(path))) throw new IOException(I18n.t("Java-Datei nicht gefunden: ") + path);
         return path;
     }
 
@@ -201,8 +201,8 @@ public final class Launcher {
         if (def != null && !def.isBlank()) return checkedJava(def);
         String found = JavaFinder.find(major);
         if (found == null) {
-            throw new IOException("Java " + major + " wurde nicht gefunden. Bitte installiere es (z. B. Eclipse Temurin "
-                    + major + ") oder trage in den Instanz-Einstellungen einen Java-Pfad ein.");
+            throw new IOException("Java " + major + I18n.t(" wurde nicht gefunden. Bitte installiere es (z. B. Eclipse Temurin ")
+                    + major + I18n.t(") oder trage in den Instanz-Einstellungen einen Java-Pfad ein."));
         }
         return found;
     }

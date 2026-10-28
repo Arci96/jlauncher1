@@ -46,7 +46,7 @@ public final class Versions {
         Path json = versionJson(id);
         if (Files.exists(json)) return;
         Entry e = manifest().stream().filter(x -> x.id().equals(id)).findFirst()
-                .orElseThrow(() -> new IOException("Unbekannte Minecraft-Version: " + id));
+                .orElseThrow(() -> new IOException(I18n.t("Unbekannte Minecraft-Version: ") + id));
         Util.download(e.url(), json, e.sha1(), true);
     }
 
@@ -154,7 +154,7 @@ public final class Versions {
                 if (f.url() == null || f.url().isEmpty()) {
                     // Wird z. B. vom Forge-Installer erzeugt - muss bereits da sein.
                     if (!Files.exists(f.path())) {
-                        throw new IOException("Library fehlt und hat keine Download-URL: " + f.path().getFileName());
+                        throw new IOException(I18n.t("Library fehlt und hat keine Download-URL: ") + f.path().getFileName());
                     }
                     continue;
                 }

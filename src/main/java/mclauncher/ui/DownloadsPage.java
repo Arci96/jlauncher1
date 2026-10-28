@@ -1,5 +1,6 @@
 package mclauncher.ui;
 
+import mclauncher.I18n;
 import mclauncher.Downloads;
 
 import javax.swing.*;
@@ -13,13 +14,13 @@ import java.util.Map;
 public class DownloadsPage extends Page {
     private final Widgets.VPanel list = new Widgets.VPanel();
     private final Map<Downloads.Task, TaskRow> rows = new HashMap<>();
-    private final JLabel empty = Widgets.muted("Keine Downloads.");
+    private final JLabel empty = Widgets.muted(I18n.t("Keine Downloads."));
 
     public DownloadsPage(MainWindow win) {
         super(win);
-        Widgets.GlowButton clear = new Widgets.GlowButton("Verlauf leeren", Widgets.Style.DARK);
+        Widgets.GlowButton clear = new Widgets.GlowButton(I18n.t("Verlauf leeren"), Widgets.Style.DARK);
         clear.addActionListener(e -> Downloads.clearFinished());
-        add(header("Downloads", "Installationen, Downloads und Spielstart", clear), BorderLayout.NORTH);
+        add(header("Downloads", I18n.t("Installationen, Downloads und Spielstart"), clear), BorderLayout.NORTH);
         add(Widgets.scroll(list), BorderLayout.CENTER);
         Downloads.addListener(() -> SwingUtilities.invokeLater(this::sync));
         new Timer(500, e -> { if (isShowing()) sync(); }).start();
